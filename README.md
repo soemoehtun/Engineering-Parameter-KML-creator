@@ -1,4 +1,4 @@
-# RF Planning & Sector KML Tools
+# RF EP KML Creator Tools
 
 This repository contains standalone web-based utilities for RF planning, antenna line-of-sight (LOS) analysis, and KML generation.
 
