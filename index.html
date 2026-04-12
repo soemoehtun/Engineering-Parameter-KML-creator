@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -1516,9 +1516,6 @@
                                 <Icons.Settings />
                                 <h2 style={{ fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Input Parameter</h2>
                             </div>
-                            <button className="toggle-btn" onClick={() => setSidebarCollapsed(true)}>
-                                <Icons.X />
-                            </button>
                         </div>
 
                         <div className="sidebar-content custom-scroll">
@@ -1753,11 +1750,9 @@
                     {/* Main Content */}
                     <div className={`main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
                         <header className="main-header">
-                            {sidebarCollapsed && (
-                                <button className="toggle-btn" onClick={() => setSidebarCollapsed(false)}>
-                                    <Icons.Menu />
-                                </button>
-                            )}
+                            <button className="toggle-btn" onClick={() => setSidebarCollapsed(prev => !prev)}>
+                                <Icons.Menu />
+                            </button>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <Icons.Tower />
                                 <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>Sector KML Creator</h1>
