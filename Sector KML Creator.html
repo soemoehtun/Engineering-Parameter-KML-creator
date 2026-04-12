@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SectorViz Pro | KML Exporter</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- React 18 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel Standalone -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- PapaParse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <!-- SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #0f172a;
+            /* slate-900 */
+            --border: #e2e8f0;
+            /* slate-200 */
+            --accent: #2563eb;
+            /* blue-600 */
+            --sidebar-width: 420px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            font-size: 13px;
+        }
+
+        .layout {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 2000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .main-content {
+            position: absolute;
+            left: var(--sidebar-width);
+            right: 0;
+            top: 0;
+            bottom: 0;
+            background: #f8fafc;
+            /* slate-50 */
+            display: flex;
+            flex-direction: column;
+            transition: left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            left: 0;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header h2 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .panel {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            color: #64748b;
+            /* slate-500 */
+        }
+
+        .dropzone {
+            border: 1px dashed var(--border);
+            border-radius: 4px;
+            padding: 32px 16px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8fafc;
+            /* slate-50 */
+            transition: background 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .dropzone:hover,
+        .dropzone.dragging {
+            background: #f1f5f9;
+            /* slate-100 */
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 6px;
+            color: #475569;
+            /* slate-600 */
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
+            background: #fff;
+            color: var(--text);
+            appearance: none;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        select.form-control {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 14px;
+            padding-right: 30px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .btn {
+            background: #0f172a;
+            /* slate-900 */
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #1e293b;
+            /* slate-800 */
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background: #f8fafc;
+            /* slate-50 */
+        }
+
+        .btn-danger {
+            background: #fef2f2;
+            /* red-50 */
+            color: #ef4444;
+            /* red-500 */
+            border: 1px solid #fecaca;
+            /* red-200 */
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #fee2e2;
+            /* red-100 */
+            color: #dc2626;
+            /* red-600 */
+        }
+
+        .btn:disabled {
+            background: #e2e8f0;
+            /* slate-200 */
+            color: #94a3b8;
+            /* slate-400 */
+            cursor: not-allowed;
+            border-color: #e2e8f0;
+        }
+
+        .main-header {
+            height: 48px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 16px;
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            color: var(--text);
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .toggle-btn:hover {
+            background: #f1f5f9;
+            /* slate-100 */
+        }
+
+        /* Map styling */
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .leaflet-container {
+            background: #f8fafc;
+            /* slate-50 */
+            font-family: inherit;
+        }
+
+        /* Override Leaflet SVG Div Icons styling */
+        .custom-shape-icon {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        /* Popup styling */
+        .leaflet-popup-content-wrapper {
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .leaflet-popup-content {
+            margin: 12px;
+        }
+
+        /* Legend floating UI */
+        .map-legend {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            min-width: 180px;
+            max-width: 280px;
+            max-height: 400px;
+            overflow-y: auto;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Google Earth-style Layer Switcher */
+        .layer-switcher {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 1000;
+        }
+
+        .layer-switcher-collapsed {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            background: #fff;
+            border: 2px solid rgba(15, 23, 42, 0.15);
+            /* slate-900 15% */
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+            /* slate-900 15% */
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .layer-switcher-collapsed:hover {
+            border-color: rgba(15, 23, 42, 0.3);
+            /* slate-900 30% */
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+            /* slate-900 20% */
+        }
+
+        .layer-switcher-collapsed img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .layer-switcher-expanded {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.2);
+            /* slate-900 20% */
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            width: auto;
+            animation: layerFadeIn 0.15s ease;
+        }
+
+        @keyframes layerFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .layer-tile {
+            width: 72px;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 6px;
+            padding: 4px;
+            transition: background 0.15s;
+        }
+
+        .layer-tile:hover {
+            background: #f1f5f9;
+            /* slate-100 */
+        }
+
+        .layer-tile.active {
+            background: #eff6ff;
+            /* blue-50 */
+        }
+
+        .layer-tile-img {
+            width: 64px;
+            height: 64px;
+            border-radius: 4px;
+            border: 2px solid transparent;
+            overflow: hidden;
+            margin: 0 auto;
+            transition: border-color 0.15s;
+        }
+
+        .layer-tile.active .layer-tile-img {
+            border-color: var(--accent);
+        }
+
+        .layer-tile-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .layer-tile-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #475569;
+            /* slate-600 */
+            margin-top: 4px;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .layer-tile.active .layer-tile-label {
+            color: var(--accent);
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+        }
+
+        .legend-color-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            flex-shrink: 0;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+        }
+
+        .legend-label {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 12px;
+            color: #475569;
+            /* slate-600 */
+        }
+
+        .legend-count {
+            font-weight: 600;
+            color: var(--text);
+            background: #f1f5f9;
+            /* slate-100 */
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--accent);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Center Map Control */
+        .map-control-btn {
+            background: #fff;
+            width: 30px;
+            height: 30px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #2c3e50;
+            transition: background 0.2s;
+            border-top: 1px solid #ddd;
+        }
+
+        .map-control-btn:hover {
+            background: #f4f4f4;
+        }
+
+        .map-controls-group {
+            position: absolute;
+            bottom: 24px;
+            right: 12px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+        }
+
+        .leaflet-control-zoom {
+            border: none !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+        }
+
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out {
+            border-bottom: 1px solid #ddd !important;
+            width: 30px !important;
+            height: 30px !important;
+            line-height: 30px !important;
+        }
+
+        /* Thin Scrollbars */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            /* slate-200 */
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+            /* slate-300 */
+        }
+
+        .legend-input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8fafc;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            margin-bottom: 4px;
+            min-height: 32px;
+        }
+
+        .legend-input-row span {
+            flex: 1;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .legend-input-row input {
+            width: 60px;
+            text-align: right;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 2px 4px;
+            font-size: 11px;
+        }
+
+        .legend-input-row input[type="color"] {
+            width: 32px;
+            height: 24px;
+            padding: 0;
+            border: none;
+            background: transparent;
+        }
+
+        /* Modal styling for Icon Picker */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 12px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: #f8fafc;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .icon-item {
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .icon-item:hover {
+            border-color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .icon-item.selected {
+            border-color: var(--accent);
+            background: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+
+        .icon-item img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        .icon-item span {
+            font-size: 10px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .color-row {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+
+        .color-circle {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 2px;
+            cursor: pointer;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s;
+        }
+
+        .color-circle:hover {
+            transform: scale(1.1);
+            z-index: 1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-circle.selected {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+            z-index: 2;
+        }
+
+        .preview-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .icon-preview-wrap {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .icon-preview-wrap img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            :root {
+                --sidebar-width: 100%;
+            }
+
+            .sidebar {
+                width: 100%;
+                z-index: 3000;
+            }
+
+            .main-content {
+                left: 0 !important;
+            }
+
+            .sidebar-header,
+            .panel {
+                padding: 16px;
+            }
+
+            .main-header {
+                padding: 0 12px;
+                gap: 8px;
+            }
+
+            .map-legend {
+                bottom: 12px;
+                right: 12px;
+                left: 12px;
+                max-width: none;
+                width: auto;
+                max-height: 150px;
+            }
+
+            .layer-switcher {
+                top: 60px;
+                right: 12px;
+            }
+        }
+
+        /* Google Earth-style Layer Switcher */
+        .layer-switcher {
+            z-index: 1000;
+        }
+
+        .layer-switcher-expanded {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.2);
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            width: auto;
+            animation: layerFadeIn 0.15s ease;
+        }
+
+        @keyframes layerFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .layer-tile {
+            width: 72px;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 6px;
+            padding: 4px;
+            transition: background 0.15s;
+        }
+
+        .layer-tile:hover {
+            background: #f1f5f9;
+        }
+
+        .layer-tile.active {
+            background: #eff6ff;
+        }
+
+        .layer-tile-img {
+            width: 64px;
+            height: 64px;
+            border-radius: 4px;
+            border: 2px solid transparent;
+            overflow: hidden;
+            margin: 0 auto;
+            transition: border-color 0.15s;
+        }
+
+        .layer-tile.active .layer-tile-img {
+            border-color: var(--accent);
+        }
+
+        .layer-tile-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .layer-tile-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #475569;
+            margin-top: 4px;
+            line-height: 1.2;
+        }
+
+        .layer-tile.active .layer-tile-label {
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+        const Icons = {
+            Map: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg>,
+            Upload: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>,
+            Export: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
+            Menu: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
+            Trash: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
+            Chevron: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>,
+            X: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+            ArrowLeft: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
+            MenuRight: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line><polyline points="16 16 20 12 16 8"></polyline></svg>,
+            Globe: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>,
+            Tower: () => (
+                <img src="https://freesvg.org/img/telecom.png" style={{ width: '40px', height: '40px', objectFit: 'contain' }} alt="Tower" />
+            ),
+            Maximize: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>,
+            Layers: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>,
+            Settings: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        };
+
+
+        const GE_ICONS = [
+            ...['ylw', 'blue', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/pushpin/${c}-pushpin.png`),
+            ...['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'].map(l => `http://maps.google.com/mapfiles/kml/paddle/${l}.png`),
+            ...['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(n => `http://maps.google.com/mapfiles/kml/paddle/${n}.png`),
+            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-blank.png`),
+            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-circle.png`),
+            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-diamond.png`),
+            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-square.png`),
+            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-stars.png`),
+            'http://maps.google.com/mapfiles/kml/shapes/arrow.png', 'http://maps.google.com/mapfiles/kml/shapes/donut.png', 'http://maps.google.com/mapfiles/kml/shapes/forbidden.png',
+            'http://maps.google.com/mapfiles/kml/shapes/info.png', 'http://maps.google.com/mapfiles/kml/shapes/polygon.png', 'http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png',
+            'http://maps.google.com/mapfiles/kml/shapes/star.png', 'http://maps.google.com/mapfiles/kml/shapes/target.png', 'http://maps.google.com/mapfiles/kml/shapes/triangle.png',
+            'http://maps.google.com/mapfiles/kml/shapes/bus.png', 'http://maps.google.com/mapfiles/kml/shapes/cabs.png', 'http://maps.google.com/mapfiles/kml/shapes/camera.png',
+            'http://maps.google.com/mapfiles/kml/shapes/coffee.png', 'http://maps.google.com/mapfiles/kml/shapes/dining.png', 'http://maps.google.com/mapfiles/kml/shapes/gas_stations.png'
+        ];
+
+        const LayerSwitcher = ({ current, onSelect }) => {
+            const [isExpanded, setIsExpanded] = useState(false);
+            const layers = [
+                { id: 'light', label: 'Light', img: 'https://basemaps.cartocdn.com/light_all/3/4/3.png' },
+                { id: 'dark', label: 'Dark', img: 'https://basemaps.cartocdn.com/dark_all/3/4/3.png' },
+                { id: 'satellite', label: 'Satellite', img: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/3/3/3' },
+                { id: 'osm', label: 'OSM', img: 'https://a.tile.openstreetmap.org/3/4/3.png' }
+            ];
+
+            const currentLayer = layers.find(l => l.id === current) || layers[0];
+
+            if (!isExpanded) {
+                return (
+                    <div
+                        className="layer-switcher-collapsed"
+                        style={{
+                            width: '44px', height: '44px', borderRadius: '4px', overflow: 'hidden',
+                            border: '2px solid white', boxShadow: '0 2px 10px rgba(0,0,0,0.2)', cursor: 'pointer'
+                        }}
+                        onClick={() => setIsExpanded(true)}
+                    >
+                        <img src={currentLayer.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Toggle Layer" />
+                    </div>
+                );
+            }
+
+            return (
+                <div className="layer-switcher-expanded" onMouseLeave={() => setIsExpanded(false)}>
+                    {layers.map(layer => (
+                        <div
+                            key={layer.id}
+                            className={`layer-tile ${current === layer.id ? 'active' : ''}`}
+                            onClick={() => { onSelect(layer.id); setIsExpanded(false); }}
+                        >
+                            <div className="layer-tile-img">
+                                <img src={layer.img} alt={layer.label} />
+                            </div>
+                            <div className="layer-tile-label">{layer.label}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const calculateSectorPolygon = (lat, lon, az, bw, rad) => {
+            const coords = [];
+            const halfBw = bw / 2;
+            const segments = 20;
+            const latDegm = 111320;
+            const lonDegm = 111320 * Math.cos(lat * (Math.PI / 180));
+
+            coords.push([lat, lon]);
+            for (let i = 0; i <= segments; i++) {
+                const ang = (az - halfBw) + (bw * (i / segments));
+                const mathAng = (90 - ang) * (Math.PI / 180);
+                const dLon = (Math.cos(mathAng) * rad) / lonDegm;
+                const dLat = (Math.sin(mathAng) * rad) / latDegm;
+                coords.push([lat + dLat, lon + dLon]);
+            }
+            coords.push([lat, lon]);
+            return coords;
+        };
+
+        const MapView = ({ data, mapping, legends, opacity, iconScale, mapLayer, sidebarOpen, searchTerm }) => {
+            const mapRef = useRef(null);
+            const mapInst = useRef(null);
+            const layerGroupRef = useRef(null);
+            const baseLayerRef = useRef(null);
+            const boundsRef = useRef([]);
+
+            const MAP_LAYERS = {
+                light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                dtm: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',
+                osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            };
+
+            const centerOnData = () => {
+                if (mapInst.current && boundsRef.current.length > 0) {
+                    mapInst.current.fitBounds(boundsRef.current, { padding: [50, 50], maxZoom: 16 });
+                }
+            };
+
+            useEffect(() => {
+                if (!mapInst.current && mapRef.current) {
+                    mapInst.current = L.map(mapRef.current, {
+                        zoomControl: false,
+                        preferCanvas: true
+                    }).setView([20, 0], 2);
+
+                    baseLayerRef.current = L.tileLayer(MAP_LAYERS[mapLayer], { maxZoom: 19 }).addTo(mapInst.current);
+                    layerGroupRef.current = L.layerGroup().addTo(mapInst.current);
+                }
+                return () => {
+                    if (mapInst.current) {
+                        mapInst.current.remove();
+                        mapInst.current = null;
+                        layerGroupRef.current = null;
+                    }
+                };
+            }, []);
+
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    if (mapInst.current) mapInst.current.invalidateSize();
+                }, 300);
+                return () => clearTimeout(timer);
+            }, [sidebarOpen]);
+
+            useEffect(() => {
+                if (baseLayerRef.current) {
+                    baseLayerRef.current.setUrl(MAP_LAYERS[mapLayer]);
+                }
+            }, [mapLayer]);
+
+            useEffect(() => {
+                if (!mapInst.current) return;
+
+                layerGroupRef.current.clearLayers();
+                if (!data.length || !mapping.Latitude || !mapping.Longitude) return;
+
+                const bounds = [];
+                boundsRef.current = bounds;
+                const sitesProcessed = new Set();
+
+                data.forEach(row => {
+                    const lat = parseFloat(row[mapping.Latitude]);
+                    const lon = parseFloat(row[mapping.Longitude]);
+                    const az = parseFloat(row[mapping.Azimuth]);
+                    const site = row[mapping.SiteName];
+                    const sector = row[mapping.SectorName];
+
+                    if (isNaN(lat) || isNaN(lon)) return;
+                    bounds.push([lat, lon]);
+
+                    // Sector Params
+                    let bw = 35;
+                    let rad = 120;
+                    let color = "#0ea5e9";
+
+                    if (mapping.BeamCategory && legends.beam[row[mapping.BeamCategory]]) {
+                        bw = parseFloat(legends.beam[row[mapping.BeamCategory]]);
+                    }
+                    if (mapping.RadiusCategory && legends.radius[row[mapping.RadiusCategory]]) {
+                        rad = parseFloat(legends.radius[row[mapping.RadiusCategory]]);
+                    }
+                    if (mapping.ColorCode && legends.color[row[mapping.ColorCode]]) {
+                        color = legends.color[row[mapping.ColorCode]];
+                    }
+
+                    if (!isNaN(az)) {
+                        const polyCoords = calculateSectorPolygon(lat, lon, az, bw, rad);
+                        const polygon = L.polygon(polyCoords, {
+                            fillColor: color,
+                            fillOpacity: opacity / 100,
+                            color: color,
+                            weight: 1,
+                            opacity: 0.8
+                        });
+
+                        // Sector Popup
+                        let secPopup = `<div style="font-size: 13px;"><b>${sector || 'Sector'}</b><hr style="margin: 4px 0;">`;
+                        mapping.sectorPopupCols.forEach(col => {
+                            secPopup += `<div><b>${col}:</b> ${row[col] || ''}</div>`;
+                        });
+                        secPopup += `</div>`;
+                        polygon.bindPopup(secPopup);
+                        layerGroupRef.current.addLayer(polygon);
+                    }
+
+                    // Site Marker
+                    if (!sitesProcessed.has(site)) {
+                        sitesProcessed.add(site);
+
+                        let iUrl = typeof GE_ICONS !== 'undefined' ? GE_ICONS[0] : "";
+                        let iColor = "#0ea5e9";
+                        let iScale = 1.0;
+
+                        if (mapping.IconCategory && legends.icons[row[mapping.IconCategory]]) {
+                            const iconConfig = legends.icons[row[mapping.IconCategory]];
+                            iUrl = iconConfig.url;
+                            iColor = iconConfig.color;
+                            iScale = iconConfig.scale;
+                        }
+
+                        const s = 24 * iScale * iconScale;
+                        const icon = L.divIcon({
+                            className: 'custom-site-icon',
+                            html: `<div style="width:${s}px; height:${s}px; overflow:hidden; position:relative;">
+                                     <img src="${iUrl}" style="width:${s}px; height:${s}px; transform: translateY(-1000px); filter: drop-shadow(0px 1000px 0px ${iColor});">
+                                   </div>`,
+                            iconSize: [s, s],
+                            iconAnchor: [s / 2, s / 2]
+                        });
+
+                        const marker = L.marker([lat, lon], { icon });
+
+                        // Site Popup
+                        let sitePopup = `<div style="font-size: 13px;"><b>${site || 'Site'}</b><hr style="margin: 4px 0;">`;
+                        mapping.sitePopupCols.forEach(col => {
+                            sitePopup += `<div><b>${col}:</b> ${row[col] || ''}</div>`;
+                        });
+                        sitePopup += `</div>`;
+                        marker.bindPopup(sitePopup);
+                        layerGroupRef.current.addLayer(marker);
+                    }
+                });
+
+                if (bounds.length > 0 && !searchTerm) {
+                    mapInst.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+                }
+            }, [data, mapping, legends, opacity, iconScale]);
+
+            useEffect(() => {
+                if (!mapInst.current || !data.length || !searchTerm) return;
+                const matchedBounds = [];
+                const s = searchTerm.toLowerCase();
+                data.forEach(row => {
+                    const site = (row[mapping.SiteName] || '').toLowerCase();
+                    const sec = (row[mapping.SectorName] || '').toLowerCase();
+                    if (site.includes(s) || sec.includes(s)) {
+                        const lat = parseFloat(row[mapping.Latitude]);
+                        const lon = parseFloat(row[mapping.Longitude]);
+                        if (!isNaN(lat) && !isNaN(lon)) matchedBounds.push([lat, lon]);
+                    }
+                });
+                if (matchedBounds.length > 0) {
+                    mapInst.current.fitBounds(matchedBounds, { padding: [50, 50], maxZoom: 16 });
+                }
+            }, [searchTerm]);
+
+            return (
+                <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    <div id="map" ref={mapRef}></div>
+                    <div className="map-controls-group">
+                        <div className="leaflet-control-zoom leaflet-bar leaflet-control">
+                            <a className="leaflet-control-zoom-in" href="#" title="Zoom in" role="button" aria-label="Zoom in" onClick={(e) => { e.preventDefault(); mapInst.current.zoomIn(); }}>+</a>
+                            <a className="leaflet-control-zoom-out" href="#" title="Zoom out" role="button" aria-label="Zoom out" onClick={(e) => { e.preventDefault(); mapInst.current.zoomOut(); }}>-</a>
+                        </div>
+                        <button className="map-control-btn" onClick={centerOnData} title="Center on Data">
+                            <Icons.Maximize />
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const IconPickerModal = ({ category, config, onSave, onClose }) => {
+            const [temp, setTemp] = useState(config || { url: GE_ICONS[0], color: "#ffffff", scale: 1.0 });
+
+            return (
+                <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#f0f0f0', width: '560px', borderRadius: '4px', border: '1px solid #ccc', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontFamily: 'Tahoma, Arial, sans-serif' }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#e04040', padding: '6px 12px', color: 'white' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 'bold' }}>Icon</span>
+                            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>✕</button>
+                        </div>
+
+                        <div style={{ padding: '12px' }}>
+                            {/* Top Controls */}
+                            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                                {/* Preview Box */}
+                                <div style={{ width: '84px', height: '84px', background: 'white', border: '1px solid #a0a0a0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ width: '64px', height: '64px', overflow: 'hidden', position: 'relative' }}>
+                                        <img
+                                            src={temp.url}
+                                            style={{
+                                                width: '64px', height: '64px',
+                                                transform: `scale(${temp.scale}) translateY(-100px)`,
+                                                filter: `drop-shadow(0px 100px 0px ${temp.color})`,
+                                                position: 'absolute', top: 0, left: 0
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Settings */}
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ fontSize: '12px', color: '#333' }}>Color:</span>
+                                            <input type="color" value={temp.color} onChange={e => setTemp({ ...temp, color: e.target.value })} style={{ width: '24px', height: '24px', padding: 0, border: '1px solid #777' }} />
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ fontSize: '12px', color: '#333' }}>Scale:</span>
+                                            <input type="number" step="0.1" min="0.1" max="5.0" value={temp.scale} onChange={e => setTemp({ ...temp, scale: parseFloat(e.target.value) })} style={{ width: '50px', fontSize: '12px', border: '1px solid #a0a0a0', padding: '2px 4px' }} />
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ fontSize: '12px', color: '#333' }}>Opacity:</span>
+                                            <select style={{ border: '1px solid #a0a0a0', fontSize: '12px', padding: '2px' }}><option>100%</option></select>
+                                        </div>
+                                    </div>
+
+                                    {/* URL Input */}
+                                    <input
+                                        type="text"
+                                        value={temp.url}
+                                        onChange={e => setTemp({ ...temp, url: e.target.value })}
+                                        style={{ width: '100%', fontSize: '12px', padding: '6px', border: '1px solid #a0a0a0', background: 'white' }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Icon Grid */}
+                            <div style={{ background: 'white', border: '1px solid #a0a0a0', height: '280px', overflowY: 'auto', padding: '8px' }} className="custom-scroll">
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '4px' }}>
+                                    {GE_ICONS.map((icon, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setTemp({ ...temp, url: icon })}
+                                            style={{
+                                                padding: '4px', cursor: 'pointer',
+                                                border: temp.url === icon ? '1px solid #000' : '1px solid transparent',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                            }}
+                                        >
+                                            <img src={icon} alt="" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Bottom Buttons */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Add Custom Icon...</button>
+                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Clear Custom Icons</button>
+                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>No Icon</button>
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <button onClick={() => { onSave(temp); onClose(); }} style={{ padding: '4px 20px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #777', borderRadius: '2px', cursor: 'pointer' }}>OK</button>
+                                    <button onClick={onClose} style={{ padding: '4px 16px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+            const [data, setData] = useState([]);
+            const [headers, setHeaders] = useState([]);
+            const [loading, setLoading] = useState(false);
+
+            const [mapping, setMapping] = useState({
+                SiteName: '',
+                SectorName: '',
+                Longitude: '',
+                Latitude: '',
+                Azimuth: '',
+                BeamCategory: '',
+                RadiusCategory: '',
+                ColorCode: '',
+                IconCategory: '',
+                sitePopupCols: [],
+                sectorPopupCols: []
+            });
+
+            const [legends, setLegends] = useState({
+                beam: {},
+                radius: {},
+                color: {},
+                icons: {}
+            });
+
+            const [opacity, setOpacity] = useState(50);
+            const [globalIconScale, setGlobalIconScale] = useState(1.0);
+            const [mapLayer, setMapLayer] = useState('light');
+            const [activeIconModal, setActiveIconModal] = useState(null);
+            const [renderTrigger, setRenderTrigger] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                setLoading(true);
+
+                const ext = file.name.split('.').pop().toLowerCase();
+
+                const processData = (rows, cols) => {
+                    const validRows = rows.filter(r => Object.values(r).some(v => v));
+                    const validCols = cols.filter(f => f);
+                    setData(validRows);
+                    setHeaders(validCols);
+                    setLoading(false);
+
+                    // Auto-detect mappings
+                    const newMapping = { ...mapping };
+                    ['SiteName', 'SectorName', 'Longitude', 'Latitude', 'Azimuth'].forEach(field => {
+                        const match = validCols.find(c => c.toLowerCase().includes(field.toLowerCase()));
+                        if (match) newMapping[field] = match;
+                    });
+                    setMapping(newMapping);
+                };
+
+                if (ext === 'csv' || ext === 'txt') {
+                    Papa.parse(file, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            processData(results.data, results.meta.fields);
+                        }
+                    });
+                } else if (ext === 'xlsx' || ext === 'xls') {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        try {
+                            const bstr = evt.target.result;
+                            const wb = XLSX.read(bstr, { type: 'binary' });
+                            const wsname = wb.SheetNames[0];
+                            const ws = wb.Sheets[wsname];
+                            const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
+                            if (json.length > 0) {
+                                const cols = Object.keys(json[0]);
+                                processData(json, cols);
+                            } else {
+                                setLoading(false);
+                            }
+                        } catch (err) {
+                            console.error("Error parsing Excel file", err);
+                            setLoading(false);
+                        }
+                    };
+                    reader.readAsBinaryString(file);
+                } else {
+                    setLoading(false);
+                }
+            };
+
+            const getUniqueValues = (col) => {
+                if (!col) return [];
+                const values = new Set();
+                data.forEach(row => {
+                    if (row[col]) values.add(row[col].trim());
+                });
+                return Array.from(values).sort();
+            };
+
+            const updateLegend = (type, category, value) => {
+                setLegends(prev => ({
+                    ...prev,
+                    [type]: { ...prev[type], [category]: value }
+                }));
+            };
+
+            useEffect(() => {
+                if (!mapping.BeamCategory) return;
+                const unique = getUniqueValues(mapping.BeamCategory);
+                const newBeam = {};
+                unique.forEach(val => newBeam[val] = legends.beam[val] || "35");
+                setLegends(prev => ({ ...prev, beam: newBeam }));
+            }, [mapping.BeamCategory, data]);
+
+            useEffect(() => {
+                if (!mapping.RadiusCategory) return;
+                const unique = getUniqueValues(mapping.RadiusCategory);
+                const newRad = {};
+                unique.forEach(val => newRad[val] = legends.radius[val] || "120");
+                setLegends(prev => ({ ...prev, radius: newRad }));
+            }, [mapping.RadiusCategory, data]);
+
+            useEffect(() => {
+                if (!mapping.ColorCode) return;
+                const unique = getUniqueValues(mapping.ColorCode);
+                const newColor = {};
+                const localPalette = ['#0ea5e9', '#0284c7', '#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8', '#94a3b8', '#0f172a', '#ffffff'];
+                unique.forEach((val, i) => newColor[val] = legends.color[val] || localPalette[i % localPalette.length]);
+                setLegends(prev => ({ ...prev, color: newColor }));
+            }, [mapping.ColorCode, data]);
+
+            useEffect(() => {
+                if (!mapping.IconCategory) return;
+                const unique = getUniqueValues(mapping.IconCategory);
+                const newIcons = {};
+                unique.forEach(val => newIcons[val] = legends.icons[val] || { url: GE_ICONS[0], color: "#ffffff", scale: 1.0 });
+                setLegends(prev => ({ ...prev, icons: newIcons }));
+            }, [mapping.IconCategory, data]);
+
+            const hexToKml = (hex, op) => {
+                hex = hex.replace("#", "");
+                const a = Math.round((op / 100) * 255).toString(16).padStart(2, "0");
+                if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+                return (a + hex.substr(4, 2) + hex.substr(2, 2) + hex.substr(0, 2)).toUpperCase();
+            };
+
+            const exportKML = () => {
+                if (!data.length) return;
+                let kml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Sector Export</name>`;
+                const sitesProcessed = {};
+
+                data.forEach(row => {
+                    const site = row[mapping.SiteName];
+                    const sec = row[mapping.SectorName];
+                    const lon = parseFloat(row[mapping.Longitude]);
+                    const lat = parseFloat(row[mapping.Latitude]);
+                    const az = parseFloat(row[mapping.Azimuth]);
+
+                    if (!site || isNaN(lon) || isNaN(lat)) return;
+
+                    let bw = 35, rad = 120, color = "#0ea5e9";
+                    if (mapping.BeamCategory && legends.beam[row[mapping.BeamCategory]]) bw = parseFloat(legends.beam[row[mapping.BeamCategory]]);
+                    if (mapping.RadiusCategory && legends.radius[row[mapping.RadiusCategory]]) rad = parseFloat(legends.radius[row[mapping.RadiusCategory]]);
+                    if (mapping.ColorCode && legends.color[row[mapping.ColorCode]]) color = legends.color[row[mapping.ColorCode]];
+
+                    const kmlColor = hexToKml(color, opacity);
+
+                    let desc = `<b style="font-size:14px">${sec}</b><br><hr>`;
+                    mapping.sectorPopupCols.forEach(f => desc += `<b>${f}:</b> ${row[f] || ''}<br>`);
+
+                    const polyCoords = calculateSectorPolygon(lat, lon, az, bw, rad);
+                    let kmlCoords = polyCoords.map(c => `${c[1]},${c[0]},0`).join(" ");
+
+                    kml += `
+                    <Placemark>
+                        <name></name>
+                        <description><![CDATA[${desc}]]></description>
+                        <Style>
+                            <LineStyle><color>${kmlColor}</color><width>1</width></LineStyle>
+                            <PolyStyle><color>${kmlColor}</color></PolyStyle>
+                            <LabelStyle><scale>0</scale></LabelStyle>
+                        </Style>
+                        <Polygon><outerBoundaryIs><LinearRing><coordinates>${kmlCoords}</coordinates></LinearRing></outerBoundaryIs></Polygon>
+                    </Placemark>`;
+
+                    if (!sitesProcessed[site]) {
+                        sitesProcessed[site] = true;
+                        let iconCfg = { url: GE_ICONS[0], color: "#ffffff", scale: 1.0 };
+                        if (mapping.IconCategory && legends.icons[row[mapping.IconCategory]]) iconCfg = legends.icons[row[mapping.IconCategory]];
+
+                        const iColor = hexToKml(iconCfg.color, 100);
+                        let sDesc = ``;
+                        mapping.sitePopupCols.forEach(f => sDesc += `<b>${f}:</b> ${row[f] || ''}<br>`);
+
+                        const styleId = "s_" + site.replace(/[^a-z0-9]/gi, "");
+                        kml += `
+                        <Style id="${styleId}">
+                            <IconStyle>
+                                <color>${iColor}</color>
+                                <scale>${iconCfg.scale * globalIconScale}</scale>
+                                <Icon><href>${iconCfg.url}</href></Icon>
+                            </IconStyle>
+                            <LabelStyle><scale>0.8</scale></LabelStyle>
+                        </Style>
+                        <Placemark>
+                            <name>${site}</name>
+                            <description><![CDATA[${sDesc}]]></description>
+                            <styleUrl>#${styleId}</styleUrl>
+                            <Point><coordinates>${lon},${lat},0</coordinates></Point>
+                        </Placemark>`;
+                    }
+                });
+
+                kml += `</Document></kml>`;
+                const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "Network_Export.kml";
+                link.click();
+            };
+
+            return (
+                <div className="layout">
+                    {/* Sidebar */}
+                    <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+                        <div className="sidebar-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
+                                <Icons.Settings />
+                                <h2 style={{ fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Input Parameter</h2>
+                            </div>
+                            <button className="toggle-btn" onClick={() => setSidebarCollapsed(true)}>
+                                <Icons.X />
+                            </button>
+                        </div>
+
+                        <div className="sidebar-content custom-scroll">
+                            {/* Panel: File Upload */}
+                            <div className="panel">
+                                <div className="section-title">Import Data</div>
+                                <label className="dropzone">
+                                    <input type="file" hidden accept=".csv,.xlsx,.txt" onChange={handleFileUpload} />
+                                    <Icons.Upload />
+                                    <div>
+                                        <div style={{ fontWeight: 600 }}>{loading ? 'Processing...' : 'Upload Sector File'}</div>
+                                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>CSV, Excel, or TXT supported</div>
+                                    </div>
+                                </label>
+                                {data.length > 0 && (
+                                    <div style={{ marginTop: '12px', fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
+                                        ✓ {data.length} records loaded
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Panel: Search */}
+                            <div className="panel">
+                                <div className="section-title">Search</div>
+                                <div className="form-group">
+                                    <input
+                                        type="text"
+                                        placeholder="Search Site / Sector..."
+                                        className="form-control"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        style={{ backgroundColor: '#ffffff', color: '#0f172a' }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Panel: mapping */}
+                            <div className="panel">
+                                <div className="section-title">Location Mapping</div>
+                                {['SiteName', 'SectorName', 'Longitude', 'Latitude', 'Azimuth'].map(field => (
+                                    <div className="form-group" key={field}>
+                                        <label>{field.replace(/([A-Z])/g, ' $1').trim()}</label>
+                                        <select
+                                            className="form-control"
+                                            value={mapping[field]}
+                                            onChange={e => setMapping({ ...mapping, [field]: e.target.value })}
+                                        >
+                                            <option value="">-- Choose Column --</option>
+                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                        </select>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Panel: Attributes */}
+                            <div className="panel">
+                                <div className="section-title">Visual Attributes</div>
+
+                                <div className="form-group">
+                                    <label>Beamwidth Column</label>
+                                    <select className="form-control" value={mapping.BeamCategory} onChange={e => setMapping({ ...mapping, BeamCategory: e.target.value })}>
+                                        <option value="">-- Manual (35°) --</option>
+                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                    </select>
+                                    {mapping.BeamCategory && Object.keys(legends.beam).map(cat => (
+                                        <div className="legend-input-row" key={cat}>
+                                            <span>{cat}</span>
+                                            <input
+                                                type="number"
+                                                value={legends.beam[cat]}
+                                                onChange={e => updateLegend('beam', cat, e.target.value)}
+                                            />
+                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>deg</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Radius Column</label>
+                                    <select className="form-control" value={mapping.RadiusCategory} onChange={e => setMapping({ ...mapping, RadiusCategory: e.target.value })}>
+                                        <option value="">-- Manual (120m) --</option>
+                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                    </select>
+                                    {mapping.RadiusCategory && Object.keys(legends.radius).map(cat => (
+                                        <div className="legend-input-row" key={cat}>
+                                            <span>{cat}</span>
+                                            <input
+                                                type="number"
+                                                value={legends.radius[cat]}
+                                                onChange={e => updateLegend('radius', cat, e.target.value)}
+                                            />
+                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>m</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Sector Color Column</label>
+                                    <select className="form-control" value={mapping.ColorCode} onChange={e => setMapping({ ...mapping, ColorCode: e.target.value })}>
+                                        <option value="">-- Single Color --</option>
+                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                    </select>
+                                    {mapping.ColorCode && Object.keys(legends.color).map(cat => (
+                                        <div className="legend-input-row" key={cat}>
+                                            <span>{cat}</span>
+                                            <input
+                                                type="color"
+                                                value={legends.color[cat]}
+                                                onChange={e => updateLegend('color', cat, e.target.value)}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Global Opacity: {opacity}%</label>
+                                    <input type="range" min="0" max="100" value={opacity} onChange={e => setOpacity(e.target.value)} />
+                                </div>
+                            </div>
+
+                            {/* Panel: Icons */}
+                            <div className="panel">
+                                <div className="section-title">Icon Mapping</div>
+                                <div className="form-group">
+                                    <label>Icon Category Column</label>
+                                    <select className="form-control" value={mapping.IconCategory} onChange={e => setMapping({ ...mapping, IconCategory: e.target.value })}>
+                                        <option value="">-- Default Icon --</option>
+                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                    </select>
+                                </div>
+                                {mapping.IconCategory && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '0 4px' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Categories ({Object.keys(legends.icons).length})</span>
+                                        <button
+                                            style={{ fontSize: '11px', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                                            onClick={() => {
+                                                const resetIcons = {};
+                                                Object.keys(legends.icons).forEach(cat => resetIcons[cat] = { url: ICON_PRESETS[0].value, color: "#0ea5e9", scale: 1.0 });
+                                                setLegends(prev => ({ ...prev, icons: resetIcons }));
+                                            }}
+                                        >
+                                            Reset All
+                                        </button>
+                                    </div>
+                                )}
+                                {mapping.IconCategory && Object.keys(legends.icons).map(cat => (
+                                    <div
+                                        key={cat}
+                                        className="legend-input-row"
+                                        style={{ cursor: 'pointer', height: '32px', margin: '0 0 4px 0' }}
+                                        onClick={() => setActiveIconModal(cat)}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                            <div style={{ width: '18px', height: '18px', overflow: 'hidden', flexShrink: 0, background: '#fff', borderRadius: '3px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <img
+                                                    src={legends.icons[cat].url}
+                                                    style={{
+                                                        width: '16px',
+                                                        height: '16px',
+                                                        transform: 'translateY(-1000px)',
+                                                        filter: `drop-shadow(0px 1000px 0px ${legends.icons[cat].color})`
+                                                    }}
+                                                />
+                                            </div>
+                                            <span style={{ fontSize: '11px', fontWeight: 500 }}>{cat}</span>
+                                        </div>
+                                        <Icons.Chevron />
+                                    </div>
+                                ))}
+                                <div className="form-group" style={{ marginTop: '16px' }}>
+                                    <label>Global Icon Scale: {globalIconScale}x</label>
+                                    <input type="range" min="0.5" max="3" step="0.1" value={globalIconScale} onChange={e => setGlobalIconScale(parseFloat(e.target.value))} />
+                                </div>
+                            </div>
+
+                            {/* Panel: Popups */}
+                            <div className="panel">
+                                <div className="section-title">Popup Information</div>
+                                <div className="form-group">
+                                    <label>Site Popup Columns</label>
+                                    <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '4px', padding: '8px' }}>
+                                        {headers.map(h => (
+                                            <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={mapping.sitePopupCols.includes(h)}
+                                                    onChange={e => {
+                                                        const newCols = e.target.checked
+                                                            ? [...mapping.sitePopupCols, h]
+                                                            : mapping.sitePopupCols.filter(c => c !== h);
+                                                        setMapping({ ...mapping, sitePopupCols: newCols });
+                                                    }}
+                                                />
+                                                <span style={{ fontSize: '12px' }}>{h}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label>Sector Popup Columns</label>
+                                    <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '4px', padding: '8px' }}>
+                                        {headers.map(h => (
+                                            <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={mapping.sectorPopupCols.includes(h)}
+                                                    onChange={e => {
+                                                        const newCols = e.target.checked
+                                                            ? [...mapping.sectorPopupCols, h]
+                                                            : mapping.sectorPopupCols.filter(c => c !== h);
+                                                        setMapping({ ...mapping, sectorPopupCols: newCols });
+                                                    }}
+                                                />
+                                                <span style={{ fontSize: '12px' }}>{h}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="panel">
+                                <button className="btn" disabled={data.length === 0} onClick={exportKML}>
+                                    <Icons.Export /> Export KML
+                                </button>
+                                <div style={{ fontSize: '11px', textAlign: 'center', marginTop: '8px', color: '#64748b' }}>
+                                    Google Earth Pro & Web Compatible
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className={`main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
+                        <header className="main-header">
+                            {sidebarCollapsed && (
+                                <button className="toggle-btn" onClick={() => setSidebarCollapsed(false)}>
+                                    <Icons.Menu />
+                                </button>
+                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <Icons.Tower />
+                                <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>Sector KML Creator</h1>
+                            </div>
+                            <div style={{ flex: 1 }}></div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 600, color: renderTrigger ? 'var(--accent)' : '#64748b' }}>
+                                        {renderTrigger ? 'Live Map On' : 'Live Map Off'}
+                                    </span>
+                                    <label className="switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={renderTrigger}
+                                            onChange={() => setRenderTrigger(!renderTrigger)}
+                                            disabled={!data.length}
+                                        />
+                                        <span className="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div id="map-container" style={{ position: 'relative', flex: 1 }}>
+                            <MapView
+                                data={renderTrigger ? data : []}
+                                searchTerm={searchTerm}
+                                mapping={mapping}
+                                legends={legends}
+                                opacity={opacity}
+                                iconScale={globalIconScale}
+                                mapLayer={mapLayer}
+                                sidebarOpen={!sidebarCollapsed}
+                            />
+
+                            {/* Layer Switcher */}
+                            <div className="layer-switcher" style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1000 }}>
+                                <LayerSwitcher current={mapLayer} onSelect={setMapLayer} />
+                            </div>
+
+
+                        </div>
+                    </div>
+
+                    {/* Modals */}
+                    {activeIconModal && (
+                        <IconPickerModal
+                            category={activeIconModal}
+                            config={legends.icons[activeIconModal]}
+                            onSave={config => updateLegend('icons', activeIconModal, config)}
+                            onClose={() => setActiveIconModal(null)}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
