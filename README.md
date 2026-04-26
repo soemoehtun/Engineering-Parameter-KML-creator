@@ -1,35 +1,77 @@
-# RF EP KML Creator Tools
+# Cell Parameter KML Export Tools
 
-This repository contains standalone web-based utilities for RF planning, antenna line-of-sight (LOS) analysis, and KML generation.
+A web-based tool for visualizing and exporting cell tower coverage data to KML format for Google Earth.
 
-## Included Tools
+## Features
 
-### 1. Sector KML Creator (SectorViz Pro)
-A responsive web application to visualize and export cell site antenna sector data into KML format for use in Google Earth and other GIS tools.
-- **Data Import**: Supports importing site details via CSV/Excel.
-- **Visualization**: Interactive Leaflet map interface with layer switching.
-- **Customization**: Supports comprehensive formatting, custom map pin icons, sector coloring, and detailed tooltips/metadata.
-- **KML Export**: Instantly generate and download KML files representing network topologies.
+- **Data Import**: Support for CSV, TXT, XLS, and XLSX files
+- **Interactive Map**: View cell sites and sector beams on an interactive map
+- **Visual Attributes**: Customizable beamwidth, radius, colors, and icons
+- **Export**: Generate KML files for Google Earth
 
-### 2. Antenna Angle Calculator
-An RF planning tool and dashboard specifically optimized for calculating line-of-sight (LOS) metrics, inner/outer coverage radii, and antenna characteristics.
-- **Interactive Map**: Real-time Leaflet map with draggable transmitter and receiver coordinates.
-- **Terrain Profiling**: Integration with the Open-Elevation API to generate dynamic terrain cross-section profiles using Chart.js.
-- **Metrics**: Real-time visualization of line of sight, clearance, and beam visualization.
+## How to Use
 
-## Technology Stack
+### 1. Import Data
 
-- **Core**: HTML5, Vanilla JavaScript, CSS3
-- **Libraries**:
-  - **React 18** (Standalone via Babel) for UI components in the KML tool.
-  - **Leaflet.js** for interactive satellite and street map layers.
-  - **Chart.js** for plotting elevation profile charts.
-  - **PapaParse** & **SheetJS (XLSX)** for reliable data parsing.
+1. Open `Cell Parameter KML Export Tools.html` in a web browser
+2. Drag and drop your Excel/CSV file onto the upload area, or click to browse
+3. Supported formats: `.csv`, `.txt`, `.xlsx`, `.xls`
 
-## Getting Started
+### 2. Map Columns
 
-These tools are built as lightweight, single-file HTML applications. No backend server, Node.js environment, or complex build step is required to run them.
+Go to the **Columns** tab and map your data columns:
 
-1. Clone or download this repository.
-2. Open `Sector KML Creator.html` or the `Antenna Angle Calculator.html` file in any modern web browser (Chrome, Edge, Firefox, Safari).
-3. Ensure you have an active internet connection to load the external CDNs (React, Leaflet, Chart.js, etc.) and fetch map/elevation data.
+| Field | Description |
+|-------|------------|
+| Site Name | Site identifier |
+| Sector Name | Sector/Cell name |
+| Longitude | Longitude coordinate |
+| Latitude | Latitude coordinate |
+| Azimuth | Beam bearing (degrees) |
+
+### 3. Visual Settings (Optional)
+
+Go to the **Style** tab to customize:
+
+- **Beamwidth Column**: Beam width per category
+- **Radius Column**: Coverage radius per category
+- **Sector Color**: Color by category
+- **Icon Category**: Different icons per category
+- **Global Opacity**: Sector beam transparency
+- **Global Icon Scale**: Site marker size
+
+### 4. Export
+
+Go to the **Actions** tab and click:
+- **Export Site KML** - Export site markers
+- **Export Sector KML** - Export sector beams
+- **Export Both** - Export combined KML
+
+## Column Mapping Example
+
+For a file with columns:
+- LTE site ID
+- Sector
+- Cell Name
+- Longitude
+- Latitude
+- Azimuth(°)
+- Antenna Hegiht
+- Etilt
+- Mtilt
+- State / Division
+- Township
+- Band
+
+Map as:
+- **Site Name** → `LTE site ID`
+- **Sector Name** → `Cell Name`
+- **Longitude** → `Longitude`
+- **Latitude** → `Latitude`
+- **Azimuth** → `Azimuth(°)`
+
+## Technical Notes
+
+- Beam calculations use default beamwidth of 35° and radius of 120m
+- KML files can be opened in Google Earth
+- Map supports Light, Dark, Satellite, and OpenStreetMap layers
