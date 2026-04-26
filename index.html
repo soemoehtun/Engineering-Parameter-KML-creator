@@ -1,10 +1,10 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SectorViz Pro | KML Exporter</title>
+    <title>Cell Parameter KML Export Tools</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -13,8 +13,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <!-- React 18 -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
     <!-- Babel Standalone -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -56,11 +56,31 @@
             font-size: 13px;
         }
 
-        .layout {
+        .app-wrapper {
             display: flex;
+            flex-direction: column;
             height: 100vh;
             width: 100vw;
+            overflow: hidden;
+        }
+
+        .layout {
+            display: flex;
+            flex: 1;
+            width: 100vw;
             position: relative;
+        }
+
+        .global-header {
+            height: 52px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 16px;
+            flex-shrink: 0;
+            z-index: 3000;
         }
 
         .sidebar {
@@ -98,59 +118,80 @@
             left: 0;
         }
 
-        .sidebar-header {
-            padding: 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
 
-        .sidebar-header h2 {
-            font-size: 15px;
-            font-weight: 600;
-        }
 
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
         }
 
-        .panel {
-            padding: 24px;
+
+
+        .sidebar-tabs {
+            display: flex;
+            padding: 4px 8px;
+            gap: 4px;
+            background: #fff;
             border-bottom: 1px solid var(--border);
+            height: 42px;
+            align-items: center;
         }
 
-        .section-title {
+        .tab-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 0 4px;
+            height: 28px;
+            border-radius: 6px;
             font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 16px;
+            font-weight: 600;
             color: #64748b;
-            /* slate-500 */
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #f1f5f9;
+        }
+
+        .tab-btn.active {
+            background: #000;
+            color: #fff;
+        }
+
+        .tab-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .panel {
+            padding: 16px;
         }
 
         .dropzone {
-            border: 1px dashed var(--border);
-            border-radius: 4px;
-            padding: 32px 16px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 6px;
+            padding: 24px 16px;
             text-align: center;
             cursor: pointer;
             background: #f8fafc;
-            /* slate-50 */
-            transition: background 0.2s;
+            transition: all 0.2s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 8px;
         }
 
-        .dropzone:hover,
-        .dropzone.dragging {
-            background: #f1f5f9;
-            /* slate-100 */
+        .dropzone:hover {
+            background: #f8fafc;
+            border-color: var(--accent);
         }
 
         .form-group {
@@ -168,9 +209,10 @@
 
         .form-control {
             width: 100%;
-            border: 1px solid var(--border);
+            border: 1px solid #e2e8f0;
             padding: 8px 12px;
-            border-radius: 4px;
+            border-radius: 6px;
+            height: 38px;
             font-family: inherit;
             font-size: 13px;
             background: #fff;
@@ -257,17 +299,7 @@
             border-color: #e2e8f0;
         }
 
-        .main-header {
-            height: 48px;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg);
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            gap: 16px;
-            flex-shrink: 0;
-            z-index: 1000;
-        }
+
 
         .toggle-btn {
             background: transparent;
@@ -525,8 +557,8 @@
             border-radius: 50%;
         }
 
-        input:checked+.slider {
-            background-color: var(--accent);
+        input:checked + .slider {
+            background-color: #000000;
         }
 
         input:checked+.slider:before {
@@ -555,15 +587,72 @@
         .map-controls-group {
             position: absolute;
             bottom: 24px;
-            right: 12px;
+            right: 16px;
             z-index: 1000;
             display: flex;
             flex-direction: column;
             background: #fff;
-            border: 2px solid rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
             border-radius: 4px;
             overflow: hidden;
-            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Map Labels Style */
+        .leaflet-tooltip.site-label,
+        .leaflet-tooltip.beam-label {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #1e293b;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .leaflet-tooltip-top.site-label:before {
+            border-top-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .leaflet-tooltip-center.beam-label {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            font-size: 9px;
+            font-weight: 500;
+        }
+
+        .map-control-btn,
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out {
+            width: 32px !important;
+            height: 32px !important;
+            line-height: 32px !important;
+            font-size: 14px !important;
+            border: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: #fff !important;
+            color: #334155 !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            cursor: pointer;
+        }
+
+        .map-control-btn:last-child {
+            border-bottom: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .map-controls-group {
+                bottom: 16px;
+                right: 16px;
+            }
         }
 
         .leaflet-control-zoom {
@@ -574,10 +663,7 @@
 
         .leaflet-control-zoom-in,
         .leaflet-control-zoom-out {
-            border-bottom: 1px solid #ddd !important;
-            width: 30px !important;
-            height: 30px !important;
-            line-height: 30px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
         }
 
         /* Thin Scrollbars */
@@ -795,12 +881,11 @@
                 left: 0 !important;
             }
 
-            .sidebar-header,
             .panel {
                 padding: 16px;
             }
 
-            .main-header {
+            .global-header {
                 padding: 0 12px;
                 gap: 8px;
             }
@@ -918,12 +1003,13 @@
             ArrowLeft: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
             MenuRight: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line><polyline points="16 16 20 12 16 8"></polyline></svg>,
             Globe: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>,
-            Tower: () => (
-                <img src="https://freesvg.org/img/telecom.png" style={{ width: '40px', height: '40px', objectFit: 'contain' }} alt="Tower" />
-            ),
-            Maximize: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>,
-            Layers: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>,
-            Settings: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            Tower: () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><circle cx="12" cy="14" r="4"></circle><line x1="12" y1="6" x2="12" y2="10"></line></svg>,
+            Settings: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Columns: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line></svg>,
+            Style: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a9 9 0 1 0 9 9c0-1.1-.9-2-2-2h-2.5a1.5 1.5 0 0 1 0-3H17a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-5z"></path><circle cx="7.5" cy="9.5" r=".7"></circle><circle cx="10.5" cy="7.5" r=".7"></circle><circle cx="7.5" cy="14.5" r=".7"></circle></svg>,
+            Filter: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+            CloudUpload: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="#94a3b8"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"></path></svg>,
+            Maximize: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
         };
 
 
@@ -942,6 +1028,7 @@
             'http://maps.google.com/mapfiles/kml/shapes/bus.png', 'http://maps.google.com/mapfiles/kml/shapes/cabs.png', 'http://maps.google.com/mapfiles/kml/shapes/camera.png',
             'http://maps.google.com/mapfiles/kml/shapes/coffee.png', 'http://maps.google.com/mapfiles/kml/shapes/dining.png', 'http://maps.google.com/mapfiles/kml/shapes/gas_stations.png'
         ];
+        const DEFAULT_ICON_URL = 'http://maps.google.com/mapfiles/kml/paddle/grn-blank.png';
 
         const LayerSwitcher = ({ current, onSelect }) => {
             const [isExpanded, setIsExpanded] = useState(false);
@@ -949,7 +1036,7 @@
                 { id: 'light', label: 'Light', img: 'https://basemaps.cartocdn.com/light_all/3/4/3.png' },
                 { id: 'dark', label: 'Dark', img: 'https://basemaps.cartocdn.com/dark_all/3/4/3.png' },
                 { id: 'satellite', label: 'Satellite', img: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/3/3/3' },
-                { id: 'osm', label: 'OSM', img: 'https://a.tile.openstreetmap.org/3/4/3.png' }
+                { id: 'osm', label: 'OSM', img: 'https://tile.openstreetmap.de/3/4/3.png' }
             ];
 
             const currentLayer = layers.find(l => l.id === current) || layers[0];
@@ -1006,7 +1093,7 @@
             return coords;
         };
 
-        const MapView = ({ data, mapping, legends, opacity, iconScale, mapLayer, sidebarOpen, searchTerm }) => {
+        const MapView = ({ data, mapping, legends, opacity, iconScale, mapLayer, sidebarOpen, searchTerm, visibility = { siteMarkers: true, beams: true, siteLabels: false, cellLabels: false } }) => {
             const mapRef = useRef(null);
             const mapInst = useRef(null);
             const layerGroupRef = useRef(null);
@@ -1018,7 +1105,7 @@
                 dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                 satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
                 dtm: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',
-                osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                osm: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png'
             };
 
             const centerOnData = () => {
@@ -1031,10 +1118,11 @@
                 if (!mapInst.current && mapRef.current) {
                     mapInst.current = L.map(mapRef.current, {
                         zoomControl: false,
-                        preferCanvas: true
+                        preferCanvas: true,
+                        attributionControl: false
                     }).setView([20, 0], 2);
 
-                    baseLayerRef.current = L.tileLayer(MAP_LAYERS[mapLayer], { maxZoom: 19 }).addTo(mapInst.current);
+                    baseLayerRef.current = L.tileLayer(MAP_LAYERS[mapLayer], { maxZoom: 19, attribution: '' }).addTo(mapInst.current);
                     layerGroupRef.current = L.layerGroup().addTo(mapInst.current);
                 }
                 return () => {
@@ -1094,7 +1182,7 @@
                         color = legends.color[row[mapping.ColorCode]];
                     }
 
-                    if (!isNaN(az)) {
+                    if (visibility.beams && !isNaN(az)) {
                         const polyCoords = calculateSectorPolygon(lat, lon, az, bw, rad);
                         const polygon = L.polygon(polyCoords, {
                             fillColor: color,
@@ -1111,21 +1199,28 @@
                         });
                         secPopup += `</div>`;
                         polygon.bindPopup(secPopup);
+
+                        if (visibility.cellLabels && sector) {
+                            polygon.bindTooltip(sector, { permanent: true, direction: 'center', className: 'beam-label' });
+                        }
+
                         layerGroupRef.current.addLayer(polygon);
                     }
 
                     // Site Marker
-                    if (!sitesProcessed.has(site)) {
-                        sitesProcessed.add(site);
+                    const siteKey = site && String(site).trim()
+                        ? `name:${String(site).trim().toLowerCase()}`
+                        : `coord:${lat.toFixed(6)},${lon.toFixed(6)}`;
 
-                        let iUrl = typeof GE_ICONS !== 'undefined' ? GE_ICONS[0] : "";
-                        let iColor = "#0ea5e9";
+                    if (visibility.siteMarkers && !sitesProcessed.has(siteKey)) {
+                        sitesProcessed.add(siteKey);
+
+                        let iUrl = DEFAULT_ICON_URL;
                         let iScale = 1.0;
 
                         if (mapping.IconCategory && legends.icons[row[mapping.IconCategory]]) {
                             const iconConfig = legends.icons[row[mapping.IconCategory]];
                             iUrl = iconConfig.url;
-                            iColor = iconConfig.color;
                             iScale = iconConfig.scale;
                         }
 
@@ -1133,7 +1228,7 @@
                         const icon = L.divIcon({
                             className: 'custom-site-icon',
                             html: `<div style="width:${s}px; height:${s}px; overflow:hidden; position:relative;">
-                                     <img src="${iUrl}" style="width:${s}px; height:${s}px; transform: translateY(-1000px); filter: drop-shadow(0px 1000px 0px ${iColor});">
+                                     <img src="${iUrl}" style="width:${s}px; height:${s}px;">
                                    </div>`,
                             iconSize: [s, s],
                             iconAnchor: [s / 2, s / 2]
@@ -1148,6 +1243,11 @@
                         });
                         sitePopup += `</div>`;
                         marker.bindPopup(sitePopup);
+
+                        if (visibility.siteLabels && site) {
+                            marker.bindTooltip(site, { permanent: true, offset: [0, -s / 2], direction: 'top', className: 'site-label' });
+                        }
+
                         layerGroupRef.current.addLayer(marker);
                     }
                 });
@@ -1155,7 +1255,7 @@
                 if (bounds.length > 0 && !searchTerm) {
                     mapInst.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
                 }
-            }, [data, mapping, legends, opacity, iconScale]);
+            }, [data, mapping, legends, opacity, iconScale, visibility]);
 
             useEffect(() => {
                 if (!mapInst.current || !data.length || !searchTerm) return;
@@ -1192,42 +1292,40 @@
         };
 
         const IconPickerModal = ({ category, config, onSave, onClose }) => {
-            const [temp, setTemp] = useState(config || { url: GE_ICONS[0], color: "#ffffff", scale: 1.0 });
+            const [temp, setTemp] = useState(config || { url: DEFAULT_ICON_URL, color: "#ffffff", scale: 1.0 });
 
             return (
-                <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div onClick={e => e.stopPropagation()} style={{ background: '#f0f0f0', width: '560px', borderRadius: '4px', border: '1px solid #ccc', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontFamily: 'Tahoma, Arial, sans-serif' }}>
+                <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#f0f0f0', width: '100%', maxWidth: '560px', borderRadius: '4px', border: '1px solid #ccc', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontFamily: 'Tahoma, Arial, sans-serif', maxH: '90vh' }}>
                         {/* Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#e04040', padding: '6px 12px', color: 'white' }}>
                             <span style={{ fontSize: '13px', fontWeight: 'bold' }}>Icon</span>
                             <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>✕</button>
                         </div>
 
-                        <div style={{ padding: '12px' }}>
+                        <div style={{ padding: '12px', overflowY: 'auto' }}>
                             {/* Top Controls */}
-                            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
                                 {/* Preview Box */}
                                 <div style={{ width: '84px', height: '84px', background: 'white', border: '1px solid #a0a0a0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <div style={{ width: '64px', height: '64px', overflow: 'hidden', position: 'relative' }}>
-                                        <img
-                                            src={temp.url}
-                                            style={{
-                                                width: '64px', height: '64px',
-                                                transform: `scale(${temp.scale}) translateY(-100px)`,
-                                                filter: `drop-shadow(0px 100px 0px ${temp.color})`,
-                                                position: 'absolute', top: 0, left: 0
-                                            }}
-                                        />
+                                    <div style={{ width: '64px', height: '64px', position: 'relative' }}>
+                                        <div style={{ width: '64px', height: '64px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <img
+                                                src={temp.url}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    transform: `scale(${temp.scale})`,
+                                                    transformOrigin: 'center'
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Settings */}
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '12px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ fontSize: '12px', color: '#333' }}>Color:</span>
-                                            <input type="color" value={temp.color} onChange={e => setTemp({ ...temp, color: e.target.value })} style={{ width: '24px', height: '24px', padding: 0, border: '1px solid #777' }} />
-                                        </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <span style={{ fontSize: '12px', color: '#333' }}>Scale:</span>
                                             <input type="number" step="0.1" min="0.1" max="5.0" value={temp.scale} onChange={e => setTemp({ ...temp, scale: parseFloat(e.target.value) })} style={{ width: '50px', fontSize: '12px', border: '1px solid #a0a0a0', padding: '2px 4px' }} />
@@ -1249,8 +1347,8 @@
                             </div>
 
                             {/* Icon Grid */}
-                            <div style={{ background: 'white', border: '1px solid #a0a0a0', height: '280px', overflowY: 'auto', padding: '8px' }} className="custom-scroll">
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '4px' }}>
+                            <div style={{ background: 'white', border: '1px solid #a0a0a0', height: '200px', overflowY: 'auto', padding: '8px' }} className="custom-scroll">
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))', gap: '4px' }}>
                                     {GE_ICONS.map((icon, idx) => (
                                         <div
                                             key={idx}
@@ -1268,10 +1366,10 @@
                             </div>
 
                             {/* Bottom Buttons */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Add Custom Icon...</button>
-                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Clear Custom Icons</button>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Add Custom...</button>
+                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Clear Custom</button>
                                     <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>No Icon</button>
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px' }}>
@@ -1316,8 +1414,81 @@
             const [globalIconScale, setGlobalIconScale] = useState(1.0);
             const [mapLayer, setMapLayer] = useState('light');
             const [activeIconModal, setActiveIconModal] = useState(null);
-            const [renderTrigger, setRenderTrigger] = useState(false);
+
             const [searchTerm, setSearchTerm] = useState('');
+            const [activeTab, setActiveTab] = useState('upload'); // 'upload', 'columns', 'style', 'filter'
+            const [isUploadOpen, setIsUploadOpen] = useState(true);
+            const [isColumnsOpen, setIsColumnsOpen] = useState(true);
+            const [isVisualOpen, setIsVisualOpen] = useState(true);
+            const [isIconOpen, setIsIconOpen] = useState(true);
+            const [isPopupOpen, setIsPopupOpen] = useState(true);
+            const [isVisibilityOpen, setIsVisibilityOpen] = useState(true);
+            const [isSearchOpen, setIsSearchOpen] = useState(true);
+            const [isActionsOpen, setIsActionsOpen] = useState(true);
+
+            const [visibility, setVisibility] = useState({
+                siteMarkers: true,
+                beams: true,
+                siteLabels: false,
+                cellLabels: false
+            });
+
+            const [filterMode, setFilterMode] = useState('both'); // 'site', 'sector', 'both'
+            const [filterColumn, setFilterColumn] = useState('');
+            const [filterValue, setFilterValue] = useState('');
+            const [hasDrawn, setHasDrawn] = useState(false);
+            const [isDrawing, setIsDrawing] = useState(false);
+            const [drawProgress, setDrawProgress] = useState(0);
+
+            const filteredData = useMemo(() => {
+                return data.filter(row => {
+                    const s = searchTerm.toLowerCase();
+                    let matchText = true;
+                    if (s) {
+                        const site = (row[mapping.SiteName] || '').toLowerCase();
+                        const sector = (row[mapping.SectorName] || '').toLowerCase();
+                        if (filterMode === 'site') matchText = site.includes(s);
+                        else if (filterMode === 'sector') matchText = sector.includes(s);
+                        else matchText = site.includes(s) || sector.includes(s);
+                    }
+
+                    let matchColumn = true;
+                    if (filterColumn && filterValue) {
+                        matchColumn = String(row[filterColumn]) === filterValue;
+                    }
+
+                    return matchText && matchColumn;
+                });
+            }, [data, searchTerm, mapping, filterMode, filterColumn, filterValue]);
+
+            const uniqueFilterValues = useMemo(() => {
+                if (!filterColumn || !data.length) return [];
+                const vals = [...new Set(data.map(r => String(r[filterColumn]).trim()))].filter(v => v);
+                return vals.sort();
+            }, [data, filterColumn]);
+
+            const popupHeaders = useMemo(
+                () => headers.filter(h => String(h).trim() && String(h).trim() !== '#'),
+                [headers]
+            );
+
+            useEffect(() => {
+                if (!isDrawing) return;
+                let progress = 0;
+                setDrawProgress(0);
+                const timer = setInterval(() => {
+                    progress += 20;
+                    if (progress >= 100) {
+                        setDrawProgress(100);
+                        setIsDrawing(false);
+                        setHasDrawn(true);
+                        clearInterval(timer);
+                        return;
+                    }
+                    setDrawProgress(progress);
+                }, 80);
+                return () => clearInterval(timer);
+            }, [isDrawing]);
 
             const handleFileUpload = (e) => {
                 const file = e.target.files[0];
@@ -1331,6 +1502,9 @@
                     const validCols = cols.filter(f => f);
                     setData(validRows);
                     setHeaders(validCols);
+                    setHasDrawn(false);
+                    setIsDrawing(false);
+                    setDrawProgress(0);
                     setLoading(false);
 
                     // Auto-detect mappings
@@ -1380,7 +1554,10 @@
                 if (!col) return [];
                 const values = new Set();
                 data.forEach(row => {
-                    if (row[col]) values.add(row[col].trim());
+                    if (row[col] !== undefined && row[col] !== null) {
+                        const valStr = String(row[col]).trim();
+                        if (valStr !== '') values.add(valStr);
+                    }
                 });
                 return Array.from(values).sort();
             };
@@ -1421,7 +1598,7 @@
                 if (!mapping.IconCategory) return;
                 const unique = getUniqueValues(mapping.IconCategory);
                 const newIcons = {};
-                unique.forEach(val => newIcons[val] = legends.icons[val] || { url: GE_ICONS[0], color: "#ffffff", scale: 1.0 });
+                unique.forEach(val => newIcons[val] = legends.icons[val] || { url: DEFAULT_ICON_URL, color: "#ffffff", scale: 1.0 });
                 setLegends(prev => ({ ...prev, icons: newIcons }));
             }, [mapping.IconCategory, data]);
 
@@ -1432,72 +1609,100 @@
                 return (a + hex.substr(4, 2) + hex.substr(2, 2) + hex.substr(0, 2)).toUpperCase();
             };
 
-            const exportKML = () => {
-                if (!data.length) return;
-                let kml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Sector Export</name>`;
-                const sitesProcessed = {};
+            const escapeXml = (value) => String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&apos;');
 
-                data.forEach(row => {
+            const exportKML = () => {
+                if (!filteredData.length) return;
+                let kml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Network Export</name>`;
+                
+                // Build Sites Folder
+                kml += `<Folder><name>Sites</name>`;
+                const sitesProcessed = {};
+                
+                filteredData.forEach(row => {
                     const site = row[mapping.SiteName];
+                    const lon = parseFloat(row[mapping.Longitude]);
+                    const lat = parseFloat(row[mapping.Latitude]);
+                    if (!site || isNaN(lon) || isNaN(lat)) return;
+                    
+                    if (!sitesProcessed[site]) {
+                        sitesProcessed[site] = true;
+                        let iconCfg = { url: DEFAULT_ICON_URL, color: "#ffffff", scale: 1.0 };
+                        if (mapping.IconCategory && legends.icons[row[mapping.IconCategory]]) iconCfg = legends.icons[row[mapping.IconCategory]];
+                        
+                        let sDesc = ``;
+                        mapping.sitePopupCols
+                            .filter(f => f !== mapping.SiteName)
+                            .forEach(f => {
+                                if (row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== '') {
+                                    sDesc += `<b>${f}:</b> ${row[f]}<br>`;
+                                }
+                            });
+                        
+                        if (mapping.sitePopupCols.includes(mapping.SiteName) && site) {
+                            sDesc += `<b>Site:</b> ${site}<br>`;
+                        }
+                        
+                        const styleId = "s_" + String(site).replace(/[^a-z0-9]/gi, "") + "_" + Object.keys(sitesProcessed).length;
+                        kml += `<Style id="${styleId}"><IconStyle><scale>${iconCfg.scale * globalIconScale}</scale><Icon><href>${iconCfg.url}</href></Icon></IconStyle><LabelStyle><scale>0.8</scale></LabelStyle></Style><Placemark><name>${escapeXml(site)}</name><description><![CDATA[${sDesc}]]></description><styleUrl>#${styleId}</styleUrl><Point><coordinates>${lon},${lat},0</coordinates></Point></Placemark>`;
+                    }
+                });
+                kml += `</Folder>`;
+                
+                // Build Sectors Folder
+                kml += `<Folder><name>Sectors</name>`;
+                
+                filteredData.forEach(row => {
                     const sec = row[mapping.SectorName];
                     const lon = parseFloat(row[mapping.Longitude]);
                     const lat = parseFloat(row[mapping.Latitude]);
                     const az = parseFloat(row[mapping.Azimuth]);
-
-                    if (!site || isNaN(lon) || isNaN(lat)) return;
-
+                    
+                    if (isNaN(lat) || isNaN(lon) || isNaN(az)) return;
+                    
                     let bw = 35, rad = 120, color = "#0ea5e9";
                     if (mapping.BeamCategory && legends.beam[row[mapping.BeamCategory]]) bw = parseFloat(legends.beam[row[mapping.BeamCategory]]);
                     if (mapping.RadiusCategory && legends.radius[row[mapping.RadiusCategory]]) rad = parseFloat(legends.radius[row[mapping.RadiusCategory]]);
                     if (mapping.ColorCode && legends.color[row[mapping.ColorCode]]) color = legends.color[row[mapping.ColorCode]];
-
+                    
                     const kmlColor = hexToKml(color, opacity);
-
-                    let desc = `<b style="font-size:14px">${sec}</b><br><hr>`;
-                    mapping.sectorPopupCols.forEach(f => desc += `<b>${f}:</b> ${row[f] || ''}<br>`);
-
+                    
+                    let desc = ``;
+                    mapping.sectorPopupCols
+                        .filter(f => f !== mapping.SectorName && f !== mapping.SiteName)
+                        .forEach(f => {
+                            if (row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== '') {
+                                desc += `<b>${f}:</b> ${row[f]}<br>`;
+                            }
+                        });
+                    
+                    if (mapping.sectorPopupCols.includes(mapping.SectorName) && sec) {
+                        desc += `<b>Sector:</b> ${sec}<br>`;
+                    }
+                    
                     const polyCoords = calculateSectorPolygon(lat, lon, az, bw, rad);
-                    let kmlCoords = polyCoords.map(c => `${c[1]},${c[0]},0`).join(" ");
-
-                    kml += `
-                    <Placemark>
-                        <name></name>
-                        <description><![CDATA[${desc}]]></description>
-                        <Style>
-                            <LineStyle><color>${kmlColor}</color><width>1</width></LineStyle>
-                            <PolyStyle><color>${kmlColor}</color></PolyStyle>
-                            <LabelStyle><scale>0</scale></LabelStyle>
-                        </Style>
-                        <Polygon><outerBoundaryIs><LinearRing><coordinates>${kmlCoords}</coordinates></LinearRing></outerBoundaryIs></Polygon>
-                    </Placemark>`;
-
-                    if (!sitesProcessed[site]) {
-                        sitesProcessed[site] = true;
-                        let iconCfg = { url: GE_ICONS[0], color: "#ffffff", scale: 1.0 };
-                        if (mapping.IconCategory && legends.icons[row[mapping.IconCategory]]) iconCfg = legends.icons[row[mapping.IconCategory]];
-
-                        const iColor = hexToKml(iconCfg.color, 100);
-                        let sDesc = ``;
-                        mapping.sitePopupCols.forEach(f => sDesc += `<b>${f}:</b> ${row[f] || ''}<br>`);
-
-                        const styleId = "s_" + site.replace(/[^a-z0-9]/gi, "");
-                        kml += `
-                        <Style id="${styleId}">
-                            <IconStyle>
-                                <color>${iColor}</color>
-                                <scale>${iconCfg.scale * globalIconScale}</scale>
-                                <Icon><href>${iconCfg.url}</href></Icon>
-                            </IconStyle>
-                            <LabelStyle><scale>0.8</scale></LabelStyle>
-                        </Style>
-                        <Placemark>
-                            <name>${site}</name>
-                            <description><![CDATA[${sDesc}]]></description>
-                            <styleUrl>#${styleId}</styleUrl>
-                            <Point><coordinates>${lon},${lat},0</coordinates></Point>
-                        </Placemark>`;
+                    const kmlCoords = polyCoords
+                        .filter(c => Number.isFinite(c[0]) && Number.isFinite(c[1]))
+                        .map(c => `${c[1]},${c[0]},0`)
+                        .join(" ");
+                    
+                    if (kmlCoords) {
+                        kml += `<Placemark><name>${escapeXml(sec || '')}</name><description><![CDATA[${desc}]]></description><Style><LineStyle><color>${kmlColor}</color><width>1</width></LineStyle><PolyStyle><color>${kmlColor}</color></PolyStyle><LabelStyle><scale>0</scale></LabelStyle></Style><Polygon><outerBoundaryIs><LinearRing><coordinates>${kmlCoords}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`;
                     }
                 });
+                kml += `</Folder>`;
+                
+                const hasPlacemarks = Object.keys(sitesProcessed).length > 0;
+
+                if (!hasPlacemarks) {
+                    window.alert("No valid rows found to export. Please verify Site, Latitude, Longitude, and Azimuth mappings.");
+                    return;
+                }
 
                 kml += `</Document></kml>`;
                 const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
@@ -1505,296 +1710,587 @@
                 link.href = URL.createObjectURL(blob);
                 link.download = "Network_Export.kml";
                 link.click();
+                URL.revokeObjectURL(link.href);
             };
 
+
+
             return (
-                <div className="layout">
-                    {/* Sidebar */}
-                    <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-                        <div className="sidebar-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
-                                <Icons.Settings />
-                                <h2 style={{ fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Input Parameter</h2>
-                            </div>
-                        </div>
+                <div className="app-wrapper">
+                    {/* Global Header */}
+                    <header className="global-header">
+                        <button className="toggle-btn" onClick={() => setSidebarCollapsed(prev => !prev)} style={{ padding: '4px' }}>
+                            <Icons.Menu />
+                        </button>
+                        <h1 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', letterSpacing: '-0.01em', margin: 0 }}>Cell Parameter KML Export Tools</h1>
+                        <div style={{ flex: 1 }}></div>
 
-                        <div className="sidebar-content custom-scroll">
-                            {/* Panel: File Upload */}
-                            <div className="panel">
-                                <div className="section-title">Import Data</div>
-                                <label className="dropzone">
-                                    <input type="file" hidden accept=".csv,.xlsx,.txt" onChange={handleFileUpload} />
+
+                    </header>
+
+                    <div className="layout">
+                        {/* Sidebar */}
+                        <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+                            <div className="sidebar-tabs">
+                                <button className={`tab-btn ${activeTab === 'upload' ? 'active' : ''}`} onClick={() => setActiveTab('upload')}>
                                     <Icons.Upload />
-                                    <div>
-                                        <div style={{ fontWeight: 600 }}>{loading ? 'Processing...' : 'Upload Sector File'}</div>
-                                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>CSV, Excel, or TXT supported</div>
-                                    </div>
-                                </label>
-                                {data.length > 0 && (
-                                    <div style={{ marginTop: '12px', fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
-                                        ✓ {data.length} records loaded
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Panel: Search */}
-                            <div className="panel">
-                                <div className="section-title">Search</div>
-                                <div className="form-group">
-                                    <input
-                                        type="text"
-                                        placeholder="Search Site / Sector..."
-                                        className="form-control"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        style={{ backgroundColor: '#ffffff', color: '#0f172a' }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Panel: mapping */}
-                            <div className="panel">
-                                <div className="section-title">Location Mapping</div>
-                                {['SiteName', 'SectorName', 'Longitude', 'Latitude', 'Azimuth'].map(field => (
-                                    <div className="form-group" key={field}>
-                                        <label>{field.replace(/([A-Z])/g, ' $1').trim()}</label>
-                                        <select
-                                            className="form-control"
-                                            value={mapping[field]}
-                                            onChange={e => setMapping({ ...mapping, [field]: e.target.value })}
-                                        >
-                                            <option value="">-- Choose Column --</option>
-                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                                        </select>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Panel: Attributes */}
-                            <div className="panel">
-                                <div className="section-title">Visual Attributes</div>
-
-                                <div className="form-group">
-                                    <label>Beamwidth Column</label>
-                                    <select className="form-control" value={mapping.BeamCategory} onChange={e => setMapping({ ...mapping, BeamCategory: e.target.value })}>
-                                        <option value="">-- Manual (35°) --</option>
-                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                                    </select>
-                                    {mapping.BeamCategory && Object.keys(legends.beam).map(cat => (
-                                        <div className="legend-input-row" key={cat}>
-                                            <span>{cat}</span>
-                                            <input
-                                                type="number"
-                                                value={legends.beam[cat]}
-                                                onChange={e => updateLegend('beam', cat, e.target.value)}
-                                            />
-                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>deg</div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="form-group">
-                                    <label>Radius Column</label>
-                                    <select className="form-control" value={mapping.RadiusCategory} onChange={e => setMapping({ ...mapping, RadiusCategory: e.target.value })}>
-                                        <option value="">-- Manual (120m) --</option>
-                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                                    </select>
-                                    {mapping.RadiusCategory && Object.keys(legends.radius).map(cat => (
-                                        <div className="legend-input-row" key={cat}>
-                                            <span>{cat}</span>
-                                            <input
-                                                type="number"
-                                                value={legends.radius[cat]}
-                                                onChange={e => updateLegend('radius', cat, e.target.value)}
-                                            />
-                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>m</div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="form-group">
-                                    <label>Sector Color Column</label>
-                                    <select className="form-control" value={mapping.ColorCode} onChange={e => setMapping({ ...mapping, ColorCode: e.target.value })}>
-                                        <option value="">-- Single Color --</option>
-                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                                    </select>
-                                    {mapping.ColorCode && Object.keys(legends.color).map(cat => (
-                                        <div className="legend-input-row" key={cat}>
-                                            <span>{cat}</span>
-                                            <input
-                                                type="color"
-                                                value={legends.color[cat]}
-                                                onChange={e => updateLegend('color', cat, e.target.value)}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="form-group">
-                                    <label>Global Opacity: {opacity}%</label>
-                                    <input type="range" min="0" max="100" value={opacity} onChange={e => setOpacity(e.target.value)} />
-                                </div>
-                            </div>
-
-                            {/* Panel: Icons */}
-                            <div className="panel">
-                                <div className="section-title">Icon Mapping</div>
-                                <div className="form-group">
-                                    <label>Icon Category Column</label>
-                                    <select className="form-control" value={mapping.IconCategory} onChange={e => setMapping({ ...mapping, IconCategory: e.target.value })}>
-                                        <option value="">-- Default Icon --</option>
-                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                                    </select>
-                                </div>
-                                {mapping.IconCategory && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '0 4px' }}>
-                                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Categories ({Object.keys(legends.icons).length})</span>
-                                        <button
-                                            style={{ fontSize: '11px', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                                            onClick={() => {
-                                                const resetIcons = {};
-                                                Object.keys(legends.icons).forEach(cat => resetIcons[cat] = { url: ICON_PRESETS[0].value, color: "#0ea5e9", scale: 1.0 });
-                                                setLegends(prev => ({ ...prev, icons: resetIcons }));
-                                            }}
-                                        >
-                                            Reset All
-                                        </button>
-                                    </div>
-                                )}
-                                {mapping.IconCategory && Object.keys(legends.icons).map(cat => (
-                                    <div
-                                        key={cat}
-                                        className="legend-input-row"
-                                        style={{ cursor: 'pointer', height: '32px', margin: '0 0 4px 0' }}
-                                        onClick={() => setActiveIconModal(cat)}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                                            <div style={{ width: '18px', height: '18px', overflow: 'hidden', flexShrink: 0, background: '#fff', borderRadius: '3px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <img
-                                                    src={legends.icons[cat].url}
-                                                    style={{
-                                                        width: '16px',
-                                                        height: '16px',
-                                                        transform: 'translateY(-1000px)',
-                                                        filter: `drop-shadow(0px 1000px 0px ${legends.icons[cat].color})`
-                                                    }}
-                                                />
-                                            </div>
-                                            <span style={{ fontSize: '11px', fontWeight: 500 }}>{cat}</span>
-                                        </div>
-                                        <Icons.Chevron />
-                                    </div>
-                                ))}
-                                <div className="form-group" style={{ marginTop: '16px' }}>
-                                    <label>Global Icon Scale: {globalIconScale}x</label>
-                                    <input type="range" min="0.5" max="3" step="0.1" value={globalIconScale} onChange={e => setGlobalIconScale(parseFloat(e.target.value))} />
-                                </div>
-                            </div>
-
-                            {/* Panel: Popups */}
-                            <div className="panel">
-                                <div className="section-title">Popup Information</div>
-                                <div className="form-group">
-                                    <label>Site Popup Columns</label>
-                                    <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '4px', padding: '8px' }}>
-                                        {headers.map(h => (
-                                            <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={mapping.sitePopupCols.includes(h)}
-                                                    onChange={e => {
-                                                        const newCols = e.target.checked
-                                                            ? [...mapping.sitePopupCols, h]
-                                                            : mapping.sitePopupCols.filter(c => c !== h);
-                                                        setMapping({ ...mapping, sitePopupCols: newCols });
-                                                    }}
-                                                />
-                                                <span style={{ fontSize: '12px' }}>{h}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="form-group">
-                                    <label>Sector Popup Columns</label>
-                                    <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '4px', padding: '8px' }}>
-                                        {headers.map(h => (
-                                            <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={mapping.sectorPopupCols.includes(h)}
-                                                    onChange={e => {
-                                                        const newCols = e.target.checked
-                                                            ? [...mapping.sectorPopupCols, h]
-                                                            : mapping.sectorPopupCols.filter(c => c !== h);
-                                                        setMapping({ ...mapping, sectorPopupCols: newCols });
-                                                    }}
-                                                />
-                                                <span style={{ fontSize: '12px' }}>{h}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="panel">
-                                <button className="btn" disabled={data.length === 0} onClick={exportKML}>
-                                    <Icons.Export /> Export KML
+                                    <span>Upload</span>
                                 </button>
-                                <div style={{ fontSize: '11px', textAlign: 'center', marginTop: '8px', color: '#64748b' }}>
-                                    Google Earth Pro & Web Compatible
-                                </div>
+                                <button className={`tab-btn ${activeTab === 'columns' ? 'active' : ''}`} onClick={() => setActiveTab('columns')}>
+                                    <Icons.Columns />
+                                    <span>Columns</span>
+                                </button>
+                                <button className={`tab-btn ${activeTab === 'style' ? 'active' : ''}`} onClick={() => setActiveTab('style')}>
+                                    <Icons.Style />
+                                    <span>Style</span>
+                                </button>
+                                <button className={`tab-btn ${activeTab === 'filter' ? 'active' : ''}`} onClick={() => setActiveTab('filter')}>
+                                    <Icons.Filter />
+                                    <span>Filter</span>
+                                </button>
+                            </div>
+
+                            <div className="sidebar-content custom-scroll">
+                                {activeTab === 'upload' && (
+                                    <>
+                                        <div className="panel">
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                                <div
+                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                                    onClick={() => setIsUploadOpen(prev => !prev)}
+                                                >
+                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>1. FILE UPLOAD</span>
+                                                    <div style={{ transform: isUploadOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                                                        <Icons.Chevron />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: isUploadOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                    <label className="dropzone">
+                                                        <input type="file" hidden accept=".csv,.xlsx,.txt" onChange={handleFileUpload} />
+                                                        <Icons.CloudUpload />
+                                                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a', textAlign: 'center' }}>
+                                                            Drag & Drop or <span style={{ textDecoration: 'underline' }}>Browse</span>
+                                                        </div>
+                                                        <div style={{ fontSize: '10px', color: '#94a3b8', textAlign: 'center' }}>CSV · TXT · XLS · XLSX</div>
+                                                    </label>
+                                                    {data.length > 0 && (
+                                                        <div style={{ marginTop: '12px', fontSize: '11px', color: '#10b981', fontWeight: 600, textAlign: 'center' }}>
+                                                            ✓ {data.length} records loaded
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                    </>
+                                )}
+
+                                {activeTab === 'columns' && (
+                                    <>
+                                        {/* Panel: mapping */}
+                                        <div className="panel">
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                                <div
+                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                                    onClick={() => setIsColumnsOpen(prev => !prev)}
+                                                >
+                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>Location Mapping</span>
+                                                    <div style={{ transform: isColumnsOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                                                        <Icons.Chevron />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: isColumnsOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                    {([
+                                                        { label: 'Site Name', key: 'SiteName' },
+                                                        { label: 'Sector Name', key: 'SectorName' },
+                                                        { label: 'Longitude', key: 'Longitude' },
+                                                        { label: 'Latitude', key: 'Latitude' },
+                                                        { label: 'Azimuth', key: 'Azimuth' }
+                                                    ]).map(field => (
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }} key={field.key}>
+                                                            <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>
+                                                                {field.label} <span style={{ color: '#ef4444' }}>*</span>
+                                                            </div>
+                                                            <select
+                                                                className="form-control"
+                                                                style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }}
+                                                                value={mapping[field.key]}
+                                                                onChange={e => setMapping({ ...mapping, [field.key]: e.target.value })}
+                                                            >
+                                                                <option value="">-- Select --</option>
+                                                                {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                            </select>
+                                                        </div>
+                                                    ))}
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {activeTab === 'style' && (
+                                    <>
+                                        {/* Panel: Attributes */}
+                                        <div className="panel">
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                                <div
+                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                                    onClick={() => setIsVisualOpen(prev => !prev)}
+                                                >
+                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>4. VISUAL ATTRIBUTES</span>
+                                                    <div style={{ transform: isVisualOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                                                        <Icons.Chevron />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: isVisualOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Beamwidth Column</div>
+                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.BeamCategory} onChange={e => setMapping({ ...mapping, BeamCategory: e.target.value })}>
+                                                            <option value="">-- Manual (35°) --</option>
+                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    {mapping.BeamCategory && Object.keys(legends.beam).map(cat => (
+                                                        <div className="legend-input-row" key={cat} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                            <span style={{ fontSize: '10px', color: '#64748b' }}>{cat}</span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '60%' }}>
+                                                                <input
+                                                                    type="number"
+                                                                    style={{ width: '100%', height: '24px', fontSize: '11px', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '0 4px' }}
+                                                                    value={legends.beam[cat] || ''}
+                                                                    onChange={e => updateLegend('beam', cat, e.target.value)}
+                                                                />
+                                                                <div style={{ fontSize: '10px', color: '#94a3b8' }}>deg</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', marginTop: '16px' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Radius Column</div>
+                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.RadiusCategory} onChange={e => setMapping({ ...mapping, RadiusCategory: e.target.value })}>
+                                                            <option value="">-- Manual (120m) --</option>
+                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    {mapping.RadiusCategory && Object.keys(legends.radius).map(cat => (
+                                                        <div className="legend-input-row" key={cat} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                            <span style={{ fontSize: '10px', color: '#64748b' }}>{cat}</span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '60%' }}>
+                                                                <input
+                                                                    type="number"
+                                                                    style={{ width: '100%', height: '24px', fontSize: '11px', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '0 4px' }}
+                                                                    value={legends.radius[cat] || ''}
+                                                                    onChange={e => updateLegend('radius', cat, e.target.value)}
+                                                                />
+                                                                <div style={{ fontSize: '10px', color: '#94a3b8' }}>m</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', marginTop: '16px' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Sector Color</div>
+                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.ColorCode} onChange={e => setMapping({ ...mapping, ColorCode: e.target.value })}>
+                                                            <option value="">-- Single Color --</option>
+                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    {mapping.ColorCode && Object.keys(legends.color).map(cat => (
+                                                        <div className="legend-input-row" key={cat} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                            <span style={{ fontSize: '10px', color: '#64748b' }}>{cat}</span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', width: '60%', justifyContent: 'flex-end' }}>
+                                                                <input
+                                                                    type="color"
+                                                                    style={{ width: '32px', height: '24px', border: '1px solid #e2e8f0', cursor: 'pointer', padding: 0, borderRadius: '4px' }}
+                                                                    value={legends.color[cat] || '#000000'}
+                                                                    onChange={e => updateLegend('color', cat, e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Global Opacity</div>
+                                                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>{opacity}%</div>
+                                                    </div>
+                                                    <div style={{ marginTop: '8px' }}>
+                                                        <input type="range" min="0" max="100" style={{ width: '100%', accentColor: '#334155' }} value={opacity} onChange={e => setOpacity(e.target.value)} />
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Panel: Icons */}
+                                        <div className="panel">
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                                <div
+                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                                    onClick={() => setIsIconOpen(prev => !prev)}
+                                                >
+                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>5. ICON SETTINGS</span>
+                                                    <div style={{ transform: isIconOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                                                        <Icons.Chevron />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: isIconOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Icon Category</div>
+                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.IconCategory} onChange={e => setMapping({ ...mapping, IconCategory: e.target.value })}>
+                                                            <option value="">-- Default Icon --</option>
+                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    {mapping.IconCategory && (
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Categories ({Object.keys(legends.icons).length})</span>
+                                                            <button
+                                                                style={{ fontSize: '11px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                                                                onClick={() => {
+                                                                    const resetIcons = {};
+                                                                    Object.keys(legends.icons).forEach(cat => resetIcons[cat] = { url: DEFAULT_ICON_URL, color: "#ffffff", scale: 1.0 });
+                                                                    setLegends(prev => ({ ...prev, icons: resetIcons }));
+                                                                }}
+                                                            >
+                                                                Reset All
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    {mapping.IconCategory && Object.keys(legends.icons).map(cat => (
+                                                        <div
+                                                            key={cat}
+                                                            className="legend-input-row"
+                                                            style={{ cursor: 'pointer', height: '40px', margin: '0 0 6px 0', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0 12px', background: '#fff' }}
+                                                            onClick={() => setActiveIconModal(cat)}
+                                                        >
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                                                <div style={{ width: '24px', height: '24px', overflow: 'hidden', flexShrink: 0, background: '#fff', borderRadius: '4px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <img
+                                                                        src={legends.icons[cat]?.url || DEFAULT_ICON_URL}
+                                                                        style={{
+                                                                            width: '20px',
+                                                                            height: '20px',
+                                                                            objectFit: 'contain'
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '11px', fontWeight: 500 }}>{cat}</span>
+                                                            </div>
+                                                            <Icons.Chevron />
+                                                        </div>
+                                                    ))}
+
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Global Icon Scale</div>
+                                                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>{globalIconScale}x</div>
+                                                    </div>
+                                                    <div style={{ marginTop: '8px' }}>
+                                                        <input type="range" min="0.5" max="3" step="0.1" style={{ width: '100%', accentColor: '#334155' }} value={globalIconScale} onChange={e => setGlobalIconScale(parseFloat(e.target.value))} />
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Panel: Visibility */}
+                                        <div className="panel">
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                                <div
+                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                                    onClick={() => setIsVisibilityOpen(prev => !prev)}
+                                                >
+                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>6. VISIBILITY</span>
+                                                    <div style={{ transform: isVisibilityOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                                                        <Icons.Chevron />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: isVisibilityOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                        {[
+                                                            { id: 'beams', label: 'Sector Beams' },
+                                                            { id: 'siteMarkers', label: 'Site Markers' },
+                                                            { id: 'siteLabels', label: 'Site Labels' },
+                                                            { id: 'cellLabels', label: 'Cell Labels' }
+                                                        ].map(opt => (
+                                                            <div key={opt.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>{opt.label}</span>
+                                                                <label className="switch">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={visibility[opt.id]}
+                                                                        onChange={e => setVisibility(prev => ({ ...prev, [opt.id]: e.target.checked }))}
+                                                                    />
+                                                                    <span className="slider"></span>
+                                                                </label>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Panel: Popups */}
+                                        <div className="panel">
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                                <div
+                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                                    onClick={() => setIsPopupOpen(prev => !prev)}
+                                                >
+                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>7. POPUP SETTINGS</span>
+                                                    <div style={{ transform: isPopupOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                                                        <Icons.Chevron />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: isPopupOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Site Popup Columns</div>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '8px' }}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setMapping({ ...mapping, sitePopupCols: [...popupHeaders] })}
+                                                            style={{ fontSize: '11px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                                                        >
+                                                            All Columns
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setMapping({ ...mapping, sitePopupCols: [] })}
+                                                            style={{ fontSize: '11px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                    </div>
+                                                    <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '8px', marginBottom: '16px' }}>
+                                                        {popupHeaders.map(h => (
+                                                            <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    style={{ cursor: 'pointer', accentColor: '#334155' }}
+                                                                    checked={mapping.sitePopupCols.includes(h)}
+                                                                    onChange={e => {
+                                                                        const newCols = e.target.checked
+                                                                            ? [...mapping.sitePopupCols, h]
+                                                                            : mapping.sitePopupCols.filter(c => c !== h);
+                                                                        setMapping({ ...mapping, sitePopupCols: newCols });
+                                                                    }}
+                                                                />
+                                                                <span style={{ fontSize: '11px', color: '#334155' }}>{h}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+
+                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Sector Popup Columns</div>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '8px' }}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setMapping({ ...mapping, sectorPopupCols: [...popupHeaders] })}
+                                                            style={{ fontSize: '11px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                                                        >
+                                                            All Columns
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setMapping({ ...mapping, sectorPopupCols: [] })}
+                                                            style={{ fontSize: '11px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                    </div>
+                                                    <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '8px' }}>
+                                                        {popupHeaders.map(h => (
+                                                            <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    style={{ cursor: 'pointer', accentColor: '#334155' }}
+                                                                    checked={mapping.sectorPopupCols.includes(h)}
+                                                                    onChange={e => {
+                                                                        const newCols = e.target.checked
+                                                                            ? [...mapping.sectorPopupCols, h]
+                                                                            : mapping.sectorPopupCols.filter(c => c !== h);
+                                                                        setMapping({ ...mapping, sectorPopupCols: newCols });
+                                                                    }}
+                                                                />
+                                                                <span style={{ fontSize: '11px', color: '#334155' }}>{h}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {activeTab === 'filter' && (
+                                    <>
+                                        {/* Panel: Search */}
+                                        <div className="panel">
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                                <div
+                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                                    onClick={() => setIsSearchOpen(prev => !prev)}
+                                                >
+                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>7. SEARCH & FILTER</span>
+                                                    <div style={{ transform: isSearchOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                                                        <Icons.Chevron />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: isSearchOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                    {/* Filter Mode Control */}
+                                                    <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '4px', marginBottom: '16px' }}>
+                                                        {['site', 'sector', 'both'].map(m => (
+                                                            <button
+                                                                key={m}
+                                                                onClick={() => setFilterMode(m)}
+                                                                style={{
+                                                                    flex: 1, height: '32px', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 600, textTransform: 'capitalize',
+                                                                    background: filterMode === m ? '#fff' : 'transparent',
+                                                                    color: filterMode === m ? '#1e293b' : '#64748b',
+                                                                    boxShadow: filterMode === m ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                                                    cursor: 'pointer', transition: 'all 0.2s'
+                                                                }}
+                                                            >
+                                                                {m}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Search</div>
+                                                    <div style={{ position: 'relative', marginBottom: '16px' }}>
+                                                        <input
+                                                            type="text"
+                                                            placeholder={`Search ${filterMode}...`}
+                                                            className="form-control"
+                                                            value={searchTerm}
+                                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                                            style={{ backgroundColor: '#f8fafc', color: '#0f172a', border: '1px solid #e2e8f0', width: '100%', height: '38px', fontSize: '12px', padding: '0 36px 0 12px', borderRadius: '6px' }}
+                                                        />
+                                                        <div style={{ position: 'absolute', right: '12px', top: '11px', color: '#94a3b8' }}>
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Column Filter</div>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                                                        <select
+                                                            className="form-control"
+                                                            style={{ height: '38px', fontSize: '12px' }}
+                                                            value={filterColumn}
+                                                            onChange={e => { setFilterColumn(e.target.value); setFilterValue(''); }}
+                                                        >
+                                                            <option value="">Select Column...</option>
+                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
+                                                        <select
+                                                            className="form-control"
+                                                            style={{ height: '38px', fontSize: '12px' }}
+                                                            value={filterValue}
+                                                            disabled={!filterColumn}
+                                                            onChange={e => setFilterValue(e.target.value)}
+                                                        >
+                                                            <option value="">Select Value...</option>
+                                                            {uniqueFilterValues.map(v => <option key={v} value={v}>{v}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                        {(filterColumn || filterValue || searchTerm) && (
+                                                            <button
+                                                                style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: '4px 0' }}
+                                                                onClick={() => { setFilterColumn(''); setFilterValue(''); setSearchTerm(''); }}
+                                                            >
+                                                                Clear all filters
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Panel: Actions */}
+                                        <div className="panel">
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                                <div
+                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                                    onClick={() => setIsActionsOpen(prev => !prev)}
+                                                >
+                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>8. ACTIONS & EXPORT</span>
+                                                    <div style={{ transform: isActionsOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                                                        <Icons.Chevron />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: isActionsOpen ? 'flex' : 'none', padding: '0 16px 16px 16px', flexDirection: 'column', gap: '8px' }}>
+                                                    <button
+                                                        className="btn"
+                                                        disabled={data.length === 0 || isDrawing}
+                                                        onClick={() => {
+                                                            if (isDrawing || data.length === 0) return;
+                                                            setHasDrawn(false);
+                                                            setIsDrawing(true);
+                                                        }}
+                                                        style={{ backgroundColor: (data.length === 0 || isDrawing) ? '#94a3b8' : '#0f172a', color: '#fff', border: 'none', width: '100%', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '6px', cursor: (data.length === 0 || isDrawing) ? 'not-allowed' : 'pointer' }}
+                                                    >
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                                                        {isDrawing ? 'Drawing...' : 'Calculate & Draw'}
+                                                    </button>
+                                                    {isDrawing && (
+                                                        <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                                                            <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+                                                                <div style={{ width: `${drawProgress}%`, height: '100%', background: '#0f172a', transition: 'width 0.08s linear' }}></div>
+                                                            </div>
+                                                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#334155', minWidth: '34px', textAlign: 'right' }}>{drawProgress}%</span>
+                                                        </div>
+                                                    )}
+
+                                                    <button
+                                                        className="btn"
+                                                        disabled={data.length === 0}
+                                                        onClick={exportKML}
+                                                        style={{ backgroundColor: data.length === 0 ? '#f1f5f9' : '#fff', color: data.length === 0 ? '#94a3b8' : '#334155', border: '1px solid #e2e8f0', width: '100%', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '6px', cursor: data.length === 0 ? 'not-allowed' : 'pointer', position: 'relative' }}
+                                                    >
+                                                        <Icons.Export /> Export KML
+                                                        <div style={{ fontSize: '10px', color: '#94a3b8', position: 'absolute', right: '12px' }}>(Earth)</div>
+                                                    </button>
+
+                                                    <button
+                                                        className="btn"
+                                                        disabled={data.length === 0}
+                                                        onClick={() => { if (window.confirm('Are you sure you want to clear all data?')) { setData([]); setHeaders([]); setSearchTerm(''); setHasDrawn(false); setIsDrawing(false); setDrawProgress(0); } }}
+                                                        style={{ backgroundColor: data.length === 0 ? '#f1f5f9' : '#fff', color: data.length === 0 ? '#94a3b8' : '#ef4444', border: data.length === 0 ? '1px solid #e2e8f0' : '1px solid #fee2e2', width: '100%', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '6px', cursor: data.length === 0 ? 'not-allowed' : 'pointer' }}
+                                                    >
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> Clear Data
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
-                    </div>
 
-                    {/* Main Content */}
-                    <div className={`main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
-                        <header className="main-header">
-                            <button className="toggle-btn" onClick={() => setSidebarCollapsed(prev => !prev)}>
-                                <Icons.Menu />
-                            </button>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <Icons.Tower />
-                                <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>Sector KML Creator</h1>
-                            </div>
-                            <div style={{ flex: 1 }}></div>
+                        {/* Main Content */}
+                        <div className={`main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
+                            <div id="map-container" style={{ position: 'relative', flex: 1, height: '100%' }}>
+                                <MapView
+                                    data={hasDrawn ? filteredData : []}
+                                    searchTerm={searchTerm}
+                                    mapping={mapping}
+                                    legends={legends}
+                                    opacity={opacity}
+                                    iconScale={globalIconScale}
+                                    mapLayer={mapLayer}
+                                    visibility={visibility}
+                                    sidebarOpen={!sidebarCollapsed}
+                                />
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span style={{ fontSize: '12px', fontWeight: 600, color: renderTrigger ? 'var(--accent)' : '#64748b' }}>
-                                        {renderTrigger ? 'Live Map On' : 'Live Map Off'}
-                                    </span>
-                                    <label className="switch">
-                                        <input
-                                            type="checkbox"
-                                            checked={renderTrigger}
-                                            onChange={() => setRenderTrigger(!renderTrigger)}
-                                            disabled={!data.length}
-                                        />
-                                        <span className="slider"></span>
-                                    </label>
+                                {/* Layer Switcher */}
+                                <div className="layer-switcher" style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1000 }}>
+                                    <LayerSwitcher current={mapLayer} onSelect={setMapLayer} />
                                 </div>
+
+
                             </div>
-                        </header>
-
-                        <div id="map-container" style={{ position: 'relative', flex: 1 }}>
-                            <MapView
-                                data={renderTrigger ? data : []}
-                                searchTerm={searchTerm}
-                                mapping={mapping}
-                                legends={legends}
-                                opacity={opacity}
-                                iconScale={globalIconScale}
-                                mapLayer={mapLayer}
-                                sidebarOpen={!sidebarCollapsed}
-                            />
-
-                            {/* Layer Switcher */}
-                            <div className="layer-switcher" style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1000 }}>
-                                <LayerSwitcher current={mapLayer} onSelect={setMapLayer} />
-                            </div>
-
-
                         </div>
                     </div>
 
