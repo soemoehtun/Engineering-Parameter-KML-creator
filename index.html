@@ -12,6 +12,10 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
     <!-- React 18 -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -21,6 +25,9 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Leaflet MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
     <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -32,11 +39,8 @@
         :root {
             --bg: #ffffff;
             --text: #0f172a;
-            /* slate-900 */
             --border: #e2e8f0;
-            /* slate-200 */
             --accent: #2563eb;
-            /* blue-600 */
             --sidebar-width: 420px;
         }
 
@@ -68,7 +72,8 @@
             display: flex;
             flex: 1;
             width: 100vw;
-            position: relative;
+            overflow: hidden;
+            min-height: 0;
         }
 
         .global-header {
@@ -85,47 +90,34 @@
 
         .sidebar {
             width: var(--sidebar-width);
+            flex-shrink: 0;
             background: var(--bg);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            z-index: 2000;
-            transition: transform 0.3s ease;
+            transition: margin-left 0.3s ease, width 0.3s ease;
+            overflow: hidden;
         }
 
         .sidebar.collapsed {
-            transform: translateX(-100%);
+            margin-left: calc(var(--sidebar-width) * -1);
+            width: var(--sidebar-width);
         }
 
         .main-content {
-            position: absolute;
-            left: var(--sidebar-width);
-            right: 0;
-            top: 0;
-            bottom: 0;
+            flex: 1;
             background: #f8fafc;
-            /* slate-50 */
             display: flex;
             flex-direction: column;
-            transition: left 0.3s ease;
+            min-width: 0;
+            position: relative;
+            overflow: hidden;
         }
-
-        .main-content.expanded {
-            left: 0;
-        }
-
-
 
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
         }
-
-
 
         .sidebar-tabs {
             display: flex;
@@ -194,19 +186,6 @@
             border-color: var(--accent);
         }
 
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 12px;
-            margin-bottom: 6px;
-            color: #475569;
-            /* slate-600 */
-            font-weight: 500;
-        }
-
         .form-control {
             width: 100%;
             border: 1px solid #e2e8f0;
@@ -234,14 +213,44 @@
         }
 
         input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
             width: 100%;
-            accent-color: var(--accent);
+            height: 4px;
+            background: #cbd5e1;
+            border-radius: 4px;
+            outline: none;
             cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #0f172a;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border: none;
+            border-radius: 50%;
+            background: #0f172a;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover,
+        input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.25);
         }
 
         .btn {
             background: #0f172a;
-            /* slate-900 */
             color: white;
             border: none;
             padding: 8px 16px;
@@ -260,46 +269,14 @@
 
         .btn:hover:not(:disabled) {
             background: #1e293b;
-            /* slate-800 */
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-outline:hover:not(:disabled) {
-            background: #f8fafc;
-            /* slate-50 */
-        }
-
-        .btn-danger {
-            background: #fef2f2;
-            /* red-50 */
-            color: #ef4444;
-            /* red-500 */
-            border: 1px solid #fecaca;
-            /* red-200 */
-        }
-
-        .btn-danger:hover:not(:disabled) {
-            background: #fee2e2;
-            /* red-100 */
-            color: #dc2626;
-            /* red-600 */
         }
 
         .btn:disabled {
             background: #e2e8f0;
-            /* slate-200 */
             color: #94a3b8;
-            /* slate-400 */
             cursor: not-allowed;
             border-color: #e2e8f0;
         }
-
-
 
         .toggle-btn {
             background: transparent;
@@ -314,10 +291,8 @@
 
         .toggle-btn:hover {
             background: #f1f5f9;
-            /* slate-100 */
         }
 
-        /* Map styling */
         #map {
             width: 100%;
             height: 100%;
@@ -326,17 +301,14 @@
 
         .leaflet-container {
             background: #f8fafc;
-            /* slate-50 */
             font-family: inherit;
         }
 
-        /* Override Leaflet SVG Div Icons styling */
         .custom-shape-icon {
             background: transparent !important;
             border: none !important;
         }
 
-        /* Popup styling */
         .leaflet-popup-content-wrapper {
             border-radius: 6px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -346,180 +318,6 @@
             margin: 12px;
         }
 
-        /* Legend floating UI */
-        .map-legend {
-            position: absolute;
-            bottom: 24px;
-            right: 24px;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            min-width: 180px;
-            max-width: 280px;
-            max-height: 400px;
-            overflow-y: auto;
-            backdrop-filter: blur(4px);
-        }
-
-        /* Google Earth-style Layer Switcher */
-        .layer-switcher {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            z-index: 1000;
-        }
-
-        .layer-switcher-collapsed {
-            width: 40px;
-            height: 40px;
-            border-radius: 4px;
-            background: #fff;
-            border: 2px solid rgba(15, 23, 42, 0.15);
-            /* slate-900 15% */
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
-            /* slate-900 15% */
-            cursor: pointer;
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-
-        .layer-switcher-collapsed:hover {
-            border-color: rgba(15, 23, 42, 0.3);
-            /* slate-900 30% */
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
-            /* slate-900 20% */
-        }
-
-        .layer-switcher-collapsed img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .layer-switcher-expanded {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.2);
-            /* slate-900 20% */
-            padding: 8px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            width: auto;
-            animation: layerFadeIn 0.15s ease;
-        }
-
-        @keyframes layerFadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .layer-tile {
-            width: 72px;
-            cursor: pointer;
-            text-align: center;
-            border-radius: 6px;
-            padding: 4px;
-            transition: background 0.15s;
-        }
-
-        .layer-tile:hover {
-            background: #f1f5f9;
-            /* slate-100 */
-        }
-
-        .layer-tile.active {
-            background: #eff6ff;
-            /* blue-50 */
-        }
-
-        .layer-tile-img {
-            width: 64px;
-            height: 64px;
-            border-radius: 4px;
-            border: 2px solid transparent;
-            overflow: hidden;
-            margin: 0 auto;
-            transition: border-color 0.15s;
-        }
-
-        .layer-tile.active .layer-tile-img {
-            border-color: var(--accent);
-        }
-
-        .layer-tile-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .layer-tile-label {
-            font-size: 10px;
-            font-weight: 600;
-            color: #475569;
-            /* slate-600 */
-            margin-top: 4px;
-            line-height: 1.2;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .layer-tile.active .layer-tile-label {
-            color: var(--accent);
-        }
-
-        .legend-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 4px 0;
-            font-size: 12px;
-        }
-
-        .legend-color-box {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-            flex-shrink: 0;
-            border: 1px solid rgba(15, 23, 42, 0.1);
-        }
-
-        .legend-label {
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-right: 12px;
-            color: #475569;
-            /* slate-600 */
-        }
-
-        .legend-count {
-            font-weight: 600;
-            color: var(--text);
-            background: #f1f5f9;
-            /* slate-100 */
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 11px;
-        }
-
-        /* Toggle Switch */
         .switch {
             position: relative;
             display: inline-block;
@@ -557,7 +355,7 @@
             border-radius: 50%;
         }
 
-        input:checked + .slider {
+        input:checked+.slider {
             background-color: #000000;
         }
 
@@ -565,7 +363,6 @@
             transform: translateX(20px);
         }
 
-        /* Center Map Control */
         .map-control-btn {
             background: #fff;
             width: 30px;
@@ -598,29 +395,38 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
-        /* Map Labels Style */
-        .leaflet-tooltip.site-label,
-        .leaflet-tooltip.beam-label {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(15, 23, 42, 0.1);
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-size: 10px;
-            font-weight: 700;
-            color: #1e293b;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        .leaflet-tooltip.site-label {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #0f172a;
+            font-size: 11px;
+            font-weight: 800;
+            text-shadow:
+                -1.5px -1.5px 0 #fff,
+                1.5px -1.5px 0 #fff,
+                -1.5px 1.5px 0 #fff,
+                1.5px 1.5px 0 #fff;
             pointer-events: none;
             white-space: nowrap;
         }
 
-        .leaflet-tooltip-top.site-label:before {
-            border-top-color: rgba(255, 255, 255, 0.9);
+        .leaflet-tooltip-top.site-label:before,
+        .leaflet-tooltip-bottom.site-label:before,
+        .leaflet-tooltip-left.site-label:before,
+        .leaflet-tooltip-right.site-label:before {
+            display: none !important;
+        }
+
+        .leaflet-tooltip.beam-label {
+            pointer-events: none;
+            white-space: nowrap;
         }
 
         .leaflet-tooltip-center.beam-label {
-            background: transparent;
-            border: none;
-            box-shadow: none;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
             color: #fff;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
             font-size: 9px;
@@ -648,25 +454,12 @@
             border-bottom: none !important;
         }
 
-        @media (max-width: 768px) {
-            .map-controls-group {
-                bottom: 16px;
-                right: 16px;
-            }
-        }
-
         .leaflet-control-zoom {
             border: none !important;
             margin: 0 !important;
             box-shadow: none !important;
         }
 
-        .leaflet-control-zoom-in,
-        .leaflet-control-zoom-out {
-            border-bottom: 1px solid #f1f5f9 !important;
-        }
-
-        /* Thin Scrollbars */
         ::-webkit-scrollbar {
             width: 4px;
             height: 4px;
@@ -678,13 +471,11 @@
 
         ::-webkit-scrollbar-thumb {
             background: #e2e8f0;
-            /* slate-200 */
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
             background: #cbd5e1;
-            /* slate-300 */
         }
 
         .legend-input-row {
@@ -725,164 +516,240 @@
             background: transparent;
         }
 
-        /* Modal styling for Icon Picker */
-        .modal-overlay {
+        /* Modal Styles */
+        .icon-modal-overlay {
             position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 9999;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 16px;
+        }
+
+        .icon-modal-card {
+            background: #f8fafc;
+            width: 100%;
+            max-width: 680px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .icon-modal-header {
+            background: #ef4444;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .icon-modal-header h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .icon-modal-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .modal-content {
-            background: #fff;
-            border-radius: 12px;
-            width: 400px;
-            max-width: 90%;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            overflow: hidden;
-        }
-
-        .modal-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .icon-modal-body {
+            padding: 16px;
             background: #f8fafc;
         }
 
-        .modal-body {
-            padding: 20px;
-        }
-
-        .modal-footer {
-            padding: 16px 20px;
-            border-top: 1px solid var(--border);
+        .icon-modal-top {
             display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            background: #f8fafc;
+            gap: 16px;
+            margin-bottom: 16px;
         }
 
-        .icon-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .icon-item {
-            border: 1px solid var(--border);
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
+        .icon-modal-preview {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
-        .icon-item:hover {
-            border-color: var(--accent);
-            background: #eff6ff;
-        }
-
-        .icon-item.selected {
-            border-color: var(--accent);
-            background: #eff6ff;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-        }
-
-        .icon-item img {
-            width: 24px;
-            height: 24px;
+        .icon-modal-preview img {
+            max-width: 60px;
+            max-height: 60px;
             object-fit: contain;
         }
 
-        .icon-item span {
+        .icon-modal-controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .icon-modal-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-modal-label {
             font-size: 10px;
             font-weight: 500;
             color: #64748b;
         }
 
-        .color-row {
-            display: grid;
-            grid-template-columns: repeat(9, 1fr);
-            gap: 4px;
-            margin-bottom: 16px;
+        .icon-modal-input {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-size: 10px;
+            color: #0f172a;
+            width: 40px;
         }
 
-        .color-circle {
+        .icon-modal-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-size: 10px;
+            color: #0f172a;
+            background: white;
+        }
+
+        .icon-modal-name-input {
             width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 11px;
+            font-family: inherit;
+            color: #334155;
+            background: white;
+        }
+
+        .icon-modal-grid-wrap {
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 8px;
+            height: 320px;
+            overflow-y: auto;
+        }
+
+        .icon-modal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 2px;
+        }
+
+        .icon-modal-item {
             aspect-ratio: 1;
-            border-radius: 2px;
-            cursor: pointer;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            transition: transform 0.1s;
-        }
-
-        .color-circle:hover {
-            transform: scale(1.1);
-            z-index: 1;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .color-circle.selected {
-            outline: 2px solid var(--accent);
-            outline-offset: 1px;
-            z-index: 2;
-        }
-
-        .preview-box {
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .icon-preview-wrap {
-            width: 48px;
-            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #fff;
+            cursor: pointer;
             border-radius: 4px;
-            border: 1px solid var(--border);
-            overflow: hidden;
+            border: 2px solid transparent;
         }
 
-        .icon-preview-wrap img {
-            width: 24px;
-            height: 24px;
+        .icon-modal-item:hover {
+            background: #f1f5f9;
+        }
+
+        .icon-modal-item.selected {
+            border-color: #0f172a;
+            background: white;
+        }
+
+        .icon-modal-item img {
+            max-width: 28px;
+            max-height: 28px;
             object-fit: contain;
+            display: block;
         }
 
-        /* Responsive Adjustments */
+        .icon-modal-footer {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .icon-modal-btn {
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .icon-modal-btn-cancel {
+            background: white;
+            color: #374151;
+            border: 1px solid #cbd5e1;
+        }
+
+        .icon-modal-btn-cancel:hover {
+            background: #f1f5f9;
+        }
+
+        .icon-modal-btn-ok {
+            background: #2563eb;
+            color: white;
+            border: 1px solid #1d4ed8;
+        }
+
+        .icon-modal-btn-ok:hover {
+            background: #1d4ed8;
+        }
+
         @media (max-width: 768px) {
             :root {
-                --sidebar-width: 100%;
+                --sidebar-width: 100vw;
             }
 
             .sidebar {
-                width: 100%;
+                width: 100vw;
+                position: absolute;
                 z-index: 3000;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                margin-left: 0;
+            }
+
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+                margin-left: 0;
             }
 
             .main-content {
-                left: 0 !important;
-            }
-
-            .panel {
-                padding: 16px;
+                flex: 1;
             }
 
             .global-header {
@@ -890,24 +757,37 @@
                 gap: 8px;
             }
 
-            .map-legend {
-                bottom: 12px;
-                right: 12px;
-                left: 12px;
-                max-width: none;
-                width: auto;
-                max-height: 150px;
-            }
-
-            .layer-switcher {
-                top: 60px;
-                right: 12px;
+            .map-controls-group {
+                bottom: 16px;
+                right: 16px;
             }
         }
 
-        /* Google Earth-style Layer Switcher */
         .layer-switcher {
             z-index: 1000;
+        }
+
+        .layer-switcher-collapsed {
+            width: 44px;
+            height: 44px;
+            border-radius: 4px;
+            background: #fff;
+            border: 2px solid white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .layer-switcher-collapsed:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .layer-switcher-collapsed img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         .layer-switcher-expanded {
@@ -935,7 +815,7 @@
         }
 
         .layer-tile {
-            width: 72px;
+            width: 68px;
             cursor: pointer;
             text-align: center;
             border-radius: 6px;
@@ -952,8 +832,8 @@
         }
 
         .layer-tile-img {
-            width: 64px;
-            height: 64px;
+            width: 60px;
+            height: 60px;
             border-radius: 4px;
             border: 2px solid transparent;
             overflow: hidden;
@@ -978,6 +858,9 @@
             color: #475569;
             margin-top: 4px;
             line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .layer-tile.active .layer-tile-label {
@@ -997,14 +880,7 @@
             Upload: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>,
             Export: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
             Menu: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
-            Trash: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
             Chevron: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>,
-            X: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-            ArrowLeft: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
-            MenuRight: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line><polyline points="16 16 20 12 16 8"></polyline></svg>,
-            Globe: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>,
-            Tower: () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><circle cx="12" cy="14" r="4"></circle><line x1="12" y1="6" x2="12" y2="10"></line></svg>,
-            Settings: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
             Columns: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line></svg>,
             Style: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a9 9 0 1 0 9 9c0-1.1-.9-2-2-2h-2.5a1.5 1.5 0 0 1 0-3H17a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-5z"></path><circle cx="7.5" cy="9.5" r=".7"></circle><circle cx="10.5" cy="7.5" r=".7"></circle><circle cx="7.5" cy="14.5" r=".7"></circle></svg>,
             Filter: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
@@ -1012,61 +888,46 @@
             Maximize: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
         };
 
+        const GE_ICON_BASE = 'https://www.google.com/mapfiles/kml';
+        const GE_ICONS = {
+            'Pushpins': ['pushpin/ylw-pushpin.png', 'pushpin/blue-pushpin.png', 'pushpin/grn-pushpin.png', 'pushpin/ltblu-pushpin.png', 'pushpin/pink-pushpin.png', 'pushpin/purple-pushpin.png', 'pushpin/red-pushpin.png', 'pushpin/wht-pushpin.png'],
+            'Paddles (Blank)': ['paddle/blu-blank.png', 'paddle/grn-blank.png', 'paddle/ltblu-blank.png', 'paddle/pink-blank.png', 'paddle/purple-blank.png', 'paddle/red-blank.png', 'paddle/wht-blank.png', 'paddle/ylw-blank.png', 'paddle/blu-circle.png', 'paddle/grn-circle.png', 'paddle/ltblu-circle.png', 'paddle/pink-circle.png', 'paddle/purple-circle.png', 'paddle/red-circle.png', 'paddle/wht-circle.png', 'paddle/ylw-circle.png', 'paddle/blu-diamond.png', 'paddle/grn-diamond.png', 'paddle/ltblu-diamond.png', 'paddle/pink-diamond.png', 'paddle/purple-diamond.png', 'paddle/red-diamond.png', 'paddle/wht-diamond.png', 'paddle/ylw-diamond.png', 'paddle/blu-square.png', 'paddle/grn-square.png', 'paddle/ltblu-square.png', 'paddle/pink-square.png', 'paddle/purple-square.png', 'paddle/red-square.png', 'paddle/wht-square.png', 'paddle/ylw-square.png', 'paddle/blu-stars.png', 'paddle/grn-stars.png', 'paddle/ltblu-stars.png', 'paddle/pink-stars.png', 'paddle/purple-stars.png', 'paddle/red-stars.png', 'paddle/wht-stars.png', 'paddle/ylw-stars.png'],
+            'Shapes': ['shapes/placemark_circle.png', 'shapes/placemark_square.png', 'shapes/star.png', 'shapes/triangle.png', 'shapes/diamond.png', 'shapes/polygon.png', 'shapes/info.png', 'shapes/camera.png', 'shapes/bus.png', 'shapes/caution.png', 'shapes/dining.png', 'shapes/mountains.png', 'shapes/parking_lot.png', 'shapes/webcam.png', 'shapes/target.png', 'shapes/trail.png', 'shapes/ranger_station.png'],
+            'Letters': [...Array(26)].map((_, i) => `paddle/${String.fromCharCode(65 + i)}.png`),
+            'Numbers': [...Array(10)].map((_, i) => `paddle/${i + 1}.png`),
+            'Palette 2': [...Array(64)].map((_, i) => `pal2/icon${i}.png`),
+            'Palette 3': [...Array(64)].map((_, i) => `pal3/icon${i}.png`),
+            'Palette 4': [...Array(64)].map((_, i) => `pal4/icon${i}.png`),
+            'Palette 5': [...Array(64)].map((_, i) => `pal5/icon${i}.png`)
+        };
 
-        const GE_ICONS = [
-            ...['ylw', 'blue', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/pushpin/${c}-pushpin.png`),
-            ...['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'].map(l => `http://maps.google.com/mapfiles/kml/paddle/${l}.png`),
-            ...['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(n => `http://maps.google.com/mapfiles/kml/paddle/${n}.png`),
-            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-blank.png`),
-            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-circle.png`),
-            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-diamond.png`),
-            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-square.png`),
-            ...['ylw', 'blu', 'grn', 'ltblu', 'pink', 'purple', 'red', 'wht'].map(c => `http://maps.google.com/mapfiles/kml/paddle/${c}-stars.png`),
-            'http://maps.google.com/mapfiles/kml/shapes/arrow.png', 'http://maps.google.com/mapfiles/kml/shapes/donut.png', 'http://maps.google.com/mapfiles/kml/shapes/forbidden.png',
-            'http://maps.google.com/mapfiles/kml/shapes/info.png', 'http://maps.google.com/mapfiles/kml/shapes/polygon.png', 'http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png',
-            'http://maps.google.com/mapfiles/kml/shapes/star.png', 'http://maps.google.com/mapfiles/kml/shapes/target.png', 'http://maps.google.com/mapfiles/kml/shapes/triangle.png',
-            'http://maps.google.com/mapfiles/kml/shapes/bus.png', 'http://maps.google.com/mapfiles/kml/shapes/cabs.png', 'http://maps.google.com/mapfiles/kml/shapes/camera.png',
-            'http://maps.google.com/mapfiles/kml/shapes/coffee.png', 'http://maps.google.com/mapfiles/kml/shapes/dining.png', 'http://maps.google.com/mapfiles/kml/shapes/gas_stations.png'
-        ];
-        const DEFAULT_ICON_URL = 'http://maps.google.com/mapfiles/kml/paddle/grn-blank.png';
+        const getIconUrl = (url) => {
+            if (!url || url === 'VECTOR_CIRCLE') return null;
+            if (url.startsWith('http')) return url;
+            return GE_ICON_BASE + '/' + url;
+        };
 
         const LayerSwitcher = ({ current, onSelect }) => {
             const [isExpanded, setIsExpanded] = useState(false);
             const layers = [
-                { id: 'light', label: 'Light', img: 'https://basemaps.cartocdn.com/light_all/3/4/3.png' },
-                { id: 'dark', label: 'Dark', img: 'https://basemaps.cartocdn.com/dark_all/3/4/3.png' },
-                { id: 'satellite', label: 'Satellite', img: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/3/3/3' },
-                { id: 'osm', label: 'OSM', img: 'https://tile.openstreetmap.de/3/4/3.png' }
+                { id: 'light', label: 'Light', img: 'https://basemaps.cartocdn.com/light_all/5/15/12.png' },
+                { id: 'dark', label: 'Dark', img: 'https://basemaps.cartocdn.com/dark_all/5/15/12.png' },
+                { id: 'satellite', label: 'Satellite', img: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/5/12/15' },
+                { id: 'osm', label: 'OSM', img: 'https://a.tile.openstreetmap.org/5/15/12.png' }
             ];
-
             const currentLayer = layers.find(l => l.id === current) || layers[0];
-
             if (!isExpanded) {
                 return (
-                    <div
-                        className="layer-switcher-collapsed"
-                        style={{
-                            width: '44px', height: '44px', borderRadius: '4px', overflow: 'hidden',
-                            border: '2px solid white', boxShadow: '0 2px 10px rgba(0,0,0,0.2)', cursor: 'pointer'
-                        }}
-                        onClick={() => setIsExpanded(true)}
-                    >
-                        <img src={currentLayer.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Toggle Layer" />
+                    <div className="layer-switcher-collapsed" onClick={() => setIsExpanded(true)}>
+                        <img src={currentLayer.img} alt="Toggle Layer" />
                     </div>
                 );
             }
-
             return (
                 <div className="layer-switcher-expanded" onMouseLeave={() => setIsExpanded(false)}>
                     {layers.map(layer => (
-                        <div
-                            key={layer.id}
-                            className={`layer-tile ${current === layer.id ? 'active' : ''}`}
-                            onClick={() => { onSelect(layer.id); setIsExpanded(false); }}
-                        >
-                            <div className="layer-tile-img">
-                                <img src={layer.img} alt={layer.label} />
-                            </div>
+                        <div key={layer.id} className={`layer-tile ${current === layer.id ? 'active' : ''}`} onClick={() => { onSelect(layer.id); setIsExpanded(false); }}>
+                            <div className="layer-tile-img"><img src={layer.img} alt={layer.label} /></div>
                             <div className="layer-tile-label">{layer.label}</div>
                         </div>
                     ))}
@@ -1080,7 +941,6 @@
             const segments = 20;
             const latDegm = 111320;
             const lonDegm = 111320 * Math.cos(lat * (Math.PI / 180));
-
             coords.push([lat, lon]);
             for (let i = 0; i <= segments; i++) {
                 const ang = (az - halfBw) + (bw * (i / segments));
@@ -1093,10 +953,13 @@
             return coords;
         };
 
-        const MapView = ({ data, mapping, legends, opacity, iconScale, mapLayer, sidebarOpen, searchTerm, visibility = { siteMarkers: true, beams: true, siteLabels: false, cellLabels: false } }) => {
+        const MapView = ({ data, mapping, legends, opacity, iconScale, mapLayer, defaultBeamwidth, defaultRadius, defaultIcon, defaultSectorColor, visibility, searchTerm }) => {
             const mapRef = useRef(null);
             const mapInst = useRef(null);
-            const layerGroupRef = useRef(null);
+            const clusterGroupRef = useRef(null);
+            const beamsGroupRef = useRef(null);
+            const hasFittedRef = useRef(false);
+            const prevDataLenRef = useRef(0);
             const baseLayerRef = useRef(null);
             const boundsRef = useRef([]);
 
@@ -1104,7 +967,6 @@
                 light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                 dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                 satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                dtm: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',
                 osm: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png'
             };
 
@@ -1116,46 +978,49 @@
 
             useEffect(() => {
                 if (!mapInst.current && mapRef.current) {
-                    mapInst.current = L.map(mapRef.current, {
-                        zoomControl: false,
-                        preferCanvas: true,
-                        attributionControl: false
-                    }).setView([20, 0], 2);
-
+                    mapInst.current = L.map(mapRef.current, { zoomControl: false, preferCanvas: true, attributionControl: false }).setView([20, 0], 2);
                     baseLayerRef.current = L.tileLayer(MAP_LAYERS[mapLayer], { maxZoom: 19, attribution: '' }).addTo(mapInst.current);
-                    layerGroupRef.current = L.layerGroup().addTo(mapInst.current);
+                    beamsGroupRef.current = L.layerGroup().addTo(mapInst.current);
+                    clusterGroupRef.current = L.markerClusterGroup({ chunkedLoading: true, spiderfyOnMaxZoom: true, showCoverageOnHover: false, zoomToBoundsOnClick: true, maxClusterRadius: 60 }).addTo(mapInst.current);
                 }
                 return () => {
-                    if (mapInst.current) {
-                        mapInst.current.remove();
-                        mapInst.current = null;
-                        layerGroupRef.current = null;
-                    }
+                    if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; clusterGroupRef.current = null; beamsGroupRef.current = null; }
                 };
             }, []);
 
+            // ResizeObserver to handle sidebar toggle and container resize
             useEffect(() => {
-                const timer = setTimeout(() => {
-                    if (mapInst.current) mapInst.current.invalidateSize();
-                }, 300);
-                return () => clearTimeout(timer);
-            }, [sidebarOpen]);
+                const container = mapRef.current;
+                if (!container || !mapInst.current) return;
+                let resizeTimeout;
+                const observer = new ResizeObserver(() => {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        if (mapInst.current) mapInst.current.invalidateSize();
+                    }, 100);
+                });
+                observer.observe(container);
+                return () => { observer.disconnect(); clearTimeout(resizeTimeout); };
+            }, []);
 
             useEffect(() => {
-                if (baseLayerRef.current) {
-                    baseLayerRef.current.setUrl(MAP_LAYERS[mapLayer]);
-                }
+                if (baseLayerRef.current) baseLayerRef.current.setUrl(MAP_LAYERS[mapLayer]);
             }, [mapLayer]);
 
             useEffect(() => {
                 if (!mapInst.current) return;
-
-                layerGroupRef.current.clearLayers();
-                if (!data.length || !mapping.Latitude || !mapping.Longitude) return;
+                beamsGroupRef.current.clearLayers();
+                clusterGroupRef.current.clearLayers();
+                if (!data.length || !mapping.Latitude || !mapping.Longitude) {
+                    hasFittedRef.current = false;
+                    prevDataLenRef.current = 0;
+                    return;
+                }
 
                 const bounds = [];
                 boundsRef.current = bounds;
                 const sitesProcessed = new Set();
+                const markersToCluster = [];
 
                 data.forEach(row => {
                     const lat = parseFloat(row[mapping.Latitude]);
@@ -1167,95 +1032,57 @@
                     if (isNaN(lat) || isNaN(lon)) return;
                     bounds.push([lat, lon]);
 
-                    // Sector Params
-                    let bw = 35;
-                    let rad = 120;
-                    let color = "#0ea5e9";
+                    let bw = defaultBeamwidth;
+                    let rad = defaultRadius;
+                    let color = defaultSectorColor;
 
-                    if (mapping.BeamCategory && legends.beam[row[mapping.BeamCategory]]) {
-                        bw = parseFloat(legends.beam[row[mapping.BeamCategory]]);
-                    }
-                    if (mapping.RadiusCategory && legends.radius[row[mapping.RadiusCategory]]) {
-                        rad = parseFloat(legends.radius[row[mapping.RadiusCategory]]);
-                    }
-                    if (mapping.ColorCode && legends.color[row[mapping.ColorCode]]) {
-                        color = legends.color[row[mapping.ColorCode]];
-                    }
+                    if (mapping.BeamCategory && legends.beam[row[mapping.BeamCategory]]) bw = parseFloat(legends.beam[row[mapping.BeamCategory]]);
+                    if (mapping.RadiusCategory && legends.radius[row[mapping.RadiusCategory]]) rad = parseFloat(legends.radius[row[mapping.RadiusCategory]]);
+                    if (mapping.ColorCode && legends.color[row[mapping.ColorCode]]) color = legends.color[row[mapping.ColorCode]];
 
                     if (visibility.beams && !isNaN(az)) {
                         const polyCoords = calculateSectorPolygon(lat, lon, az, bw, rad);
-                        const polygon = L.polygon(polyCoords, {
-                            fillColor: color,
-                            fillOpacity: opacity / 100,
-                            color: color,
-                            weight: 1,
-                            opacity: 0.8
-                        });
-
-                        // Sector Popup
+                        const polygon = L.polygon(polyCoords, { fillColor: color, fillOpacity: opacity / 100, color: color, weight: 1, opacity: 0.8 });
                         let secPopup = `<div style="font-size: 13px;"><b>${sector || 'Sector'}</b><hr style="margin: 4px 0;">`;
-                        mapping.sectorPopupCols.forEach(col => {
-                            secPopup += `<div><b>${col}:</b> ${row[col] || ''}</div>`;
-                        });
+                        mapping.sectorPopupCols.forEach(col => { secPopup += `<div><b>${col}:</b> ${row[col] || ''}</div>`; });
                         secPopup += `</div>`;
                         polygon.bindPopup(secPopup);
-
-                        if (visibility.cellLabels && sector) {
-                            polygon.bindTooltip(sector, { permanent: true, direction: 'center', className: 'beam-label' });
-                        }
-
-                        layerGroupRef.current.addLayer(polygon);
+                        if (visibility.cellLabels && sector) polygon.bindTooltip(sector, { permanent: true, direction: 'center', className: 'beam-label' });
+                        beamsGroupRef.current.addLayer(polygon);
                     }
 
-                    // Site Marker
-                    const siteKey = site && String(site).trim()
-                        ? `name:${String(site).trim().toLowerCase()}`
-                        : `coord:${lat.toFixed(6)},${lon.toFixed(6)}`;
-
+                    const siteKey = site && String(site).trim() ? `name:${String(site).trim().toLowerCase()}` : `coord:${lat.toFixed(6)},${lon.toFixed(6)}`;
                     if (visibility.siteMarkers && !sitesProcessed.has(siteKey)) {
                         sitesProcessed.add(siteKey);
-
-                        let iUrl = DEFAULT_ICON_URL;
-                        let iScale = 1.0;
+                        let iUrl = getIconUrl(defaultIcon.url) || defaultIcon.url;
+                        let iScale = defaultIcon.scale;
 
                         if (mapping.IconCategory && legends.icons[row[mapping.IconCategory]]) {
                             const iconConfig = legends.icons[row[mapping.IconCategory]];
-                            iUrl = iconConfig.url;
+                            iUrl = getIconUrl(iconConfig.url) || iconConfig.url;
                             iScale = iconConfig.scale;
                         }
-
                         const s = 24 * iScale * iconScale;
-                        const icon = L.divIcon({
-                            className: 'custom-site-icon',
-                            html: `<div style="width:${s}px; height:${s}px; overflow:hidden; position:relative;">
-                                     <img src="${iUrl}" style="width:${s}px; height:${s}px;">
-                                   </div>`,
-                            iconSize: [s, s],
-                            iconAnchor: [s / 2, s / 2]
-                        });
-
+                        const icon = L.divIcon({ className: 'custom-site-icon', html: `<div style="width:${s}px; height:${s}px; overflow:hidden; position:relative;"><img src="${iUrl}" style="width:${s}px; height:${s}px;"></div>`, iconSize: [s, s], iconAnchor: [s / 2, s / 2] });
                         const marker = L.marker([lat, lon], { icon });
 
-                        // Site Popup
                         let sitePopup = `<div style="font-size: 13px;"><b>${site || 'Site'}</b><hr style="margin: 4px 0;">`;
-                        mapping.sitePopupCols.forEach(col => {
-                            sitePopup += `<div><b>${col}:</b> ${row[col] || ''}</div>`;
-                        });
+                        mapping.sitePopupCols.forEach(col => { sitePopup += `<div><b>${col}:</b> ${row[col] || ''}</div>`; });
                         sitePopup += `</div>`;
                         marker.bindPopup(sitePopup);
-
-                        if (visibility.siteLabels && site) {
-                            marker.bindTooltip(site, { permanent: true, offset: [0, -s / 2], direction: 'top', className: 'site-label' });
-                        }
-
-                        layerGroupRef.current.addLayer(marker);
+                        if (visibility.siteLabels && site) marker.bindTooltip(site, { permanent: true, offset: [0, -s / 2], direction: 'top', className: 'site-label' });
+                        markersToCluster.push(marker);
                     }
                 });
-
-                if (bounds.length > 0 && !searchTerm) {
+                clusterGroupRef.current.addLayers(markersToCluster);
+                // Only fitBounds when data first appears or data set changes (new file / filter), not on style changes
+                const dataChanged = data.length !== prevDataLenRef.current;
+                prevDataLenRef.current = data.length;
+                if (bounds.length > 0 && !searchTerm && (!hasFittedRef.current || dataChanged)) {
                     mapInst.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+                    hasFittedRef.current = true;
                 }
-            }, [data, mapping, legends, opacity, iconScale, visibility]);
+            }, [data, mapping, legends, opacity, iconScale, visibility, defaultIcon, defaultSectorColor, defaultBeamwidth, defaultRadius]);
 
             useEffect(() => {
                 if (!mapInst.current || !data.length || !searchTerm) return;
@@ -1270,9 +1097,7 @@
                         if (!isNaN(lat) && !isNaN(lon)) matchedBounds.push([lat, lon]);
                     }
                 });
-                if (matchedBounds.length > 0) {
-                    mapInst.current.fitBounds(matchedBounds, { padding: [50, 50], maxZoom: 16 });
-                }
+                if (matchedBounds.length > 0) mapInst.current.fitBounds(matchedBounds, { padding: [50, 50], maxZoom: 16 });
             }, [searchTerm]);
 
             return (
@@ -1280,103 +1105,58 @@
                     <div id="map" ref={mapRef}></div>
                     <div className="map-controls-group">
                         <div className="leaflet-control-zoom leaflet-bar leaflet-control">
-                            <a className="leaflet-control-zoom-in" href="#" title="Zoom in" role="button" aria-label="Zoom in" onClick={(e) => { e.preventDefault(); mapInst.current.zoomIn(); }}>+</a>
-                            <a className="leaflet-control-zoom-out" href="#" title="Zoom out" role="button" aria-label="Zoom out" onClick={(e) => { e.preventDefault(); mapInst.current.zoomOut(); }}>-</a>
+                            <a className="leaflet-control-zoom-in" href="#" onClick={(e) => { e.preventDefault(); mapInst.current.zoomIn(); }}>+</a>
+                            <a className="leaflet-control-zoom-out" href="#" onClick={(e) => { e.preventDefault(); mapInst.current.zoomOut(); }}>-</a>
                         </div>
-                        <button className="map-control-btn" onClick={centerOnData} title="Center on Data">
-                            <Icons.Maximize />
-                        </button>
+                        <button className="map-control-btn" onClick={centerOnData} title="Center on Data"><Icons.Maximize /></button>
                     </div>
                 </div>
             );
         };
 
         const IconPickerModal = ({ category, config, onSave, onClose }) => {
-            const [temp, setTemp] = useState(config || { url: DEFAULT_ICON_URL, color: "#ffffff", scale: 1.0 });
+            const currentIcon = config ? { url: config.url, color: config.color || '#ef4444', size: config.scale ? config.scale * 24 : 24, opacity: 1.0 } : null;
+            const [selectedIcon, setSelectedIcon] = useState(currentIcon?.url || 'paddle/red-blank.png');
+            const [selectedColor, setSelectedColor] = useState(currentIcon?.color || '#ef4444');
+            const [selectedSize, setSelectedSize] = useState(currentIcon?.size || 24);
+            const [selectedOpacity, setSelectedOpacity] = useState(currentIcon?.opacity ?? 1.0);
+
+            const previewUrl = getIconUrl(selectedIcon);
+            const internalName = selectedIcon && selectedIcon !== 'VECTOR_CIRCLE' ? selectedIcon.split('/').pop().replace(/\.png|\.gif|\.svg|\.jpg|\.jpeg/gi, '').toUpperCase() : 'CIRCLE';
+            const allIcons = Object.entries(GE_ICONS).flatMap(([cat, icons]) => icons.map((url) => ({ url, category: cat, fullName: cat + '/' + url })));
 
             return (
-                <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    <div onClick={e => e.stopPropagation()} style={{ background: '#f0f0f0', width: '100%', maxWidth: '560px', borderRadius: '4px', border: '1px solid #ccc', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontFamily: 'Tahoma, Arial, sans-serif', maxH: '90vh' }}>
-                        {/* Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#e04040', padding: '6px 12px', color: 'white' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 'bold' }}>Icon</span>
-                            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>✕</button>
+                <div className="icon-modal-overlay" onClick={onClose}>
+                    <div className="icon-modal-card" onClick={e => e.stopPropagation()}>
+                        <div className="icon-modal-header">
+                            <h3>{category === '__DEFAULT__' ? 'Default Icon' : `Icon: ${category}`}</h3>
+                            <button className="icon-modal-close" onClick={onClose}>&times;</button>
                         </div>
-
-                        <div style={{ padding: '12px', overflowY: 'auto' }}>
-                            {/* Top Controls */}
-                            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                                {/* Preview Box */}
-                                <div style={{ width: '84px', height: '84px', background: 'white', border: '1px solid #a0a0a0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <div style={{ width: '64px', height: '64px', position: 'relative' }}>
-                                        <div style={{ width: '64px', height: '64px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <img
-                                                src={temp.url}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    transform: `scale(${temp.scale})`,
-                                                    transformOrigin: 'center'
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
+                        <div className="icon-modal-body">
+                            <div className="icon-modal-top">
+                                <div className="icon-modal-preview">
+                                    {selectedIcon === 'VECTOR_CIRCLE' || !selectedIcon ? <div style={{ width: 40, height: 40, borderRadius: '50%', background: selectedColor }}></div> : previewUrl ? <img src={previewUrl} alt="preview" /> : <div style={{ width: 40, height: 40, borderRadius: '50%', background: selectedColor }}></div>}
                                 </div>
-
-                                {/* Settings */}
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '12px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ fontSize: '12px', color: '#333' }}>Scale:</span>
-                                            <input type="number" step="0.1" min="0.1" max="5.0" value={temp.scale} onChange={e => setTemp({ ...temp, scale: parseFloat(e.target.value) })} style={{ width: '50px', fontSize: '12px', border: '1px solid #a0a0a0', padding: '2px 4px' }} />
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ fontSize: '12px', color: '#333' }}>Opacity:</span>
-                                            <select style={{ border: '1px solid #a0a0a0', fontSize: '12px', padding: '2px' }}><option>100%</option></select>
-                                        </div>
+                                <div className="icon-modal-controls">
+                                    <div className="icon-modal-row">
+                                        <span className="icon-modal-label">Size:</span>
+                                        <input type="number" value={selectedSize} min={8} max={72} step={2} onChange={e => setSelectedSize(parseInt(e.target.value) || 24)} className="icon-modal-input" />
                                     </div>
-
-                                    {/* URL Input */}
-                                    <input
-                                        type="text"
-                                        value={temp.url}
-                                        onChange={e => setTemp({ ...temp, url: e.target.value })}
-                                        style={{ width: '100%', fontSize: '12px', padding: '6px', border: '1px solid #a0a0a0', background: 'white' }}
-                                    />
+                                    <input value={internalName} readOnly className="icon-modal-name-input" />
                                 </div>
                             </div>
-
-                            {/* Icon Grid */}
-                            <div style={{ background: 'white', border: '1px solid #a0a0a0', height: '200px', overflowY: 'auto', padding: '8px' }} className="custom-scroll">
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))', gap: '4px' }}>
-                                    {GE_ICONS.map((icon, idx) => (
-                                        <div
-                                            key={idx}
-                                            onClick={() => setTemp({ ...temp, url: icon })}
-                                            style={{
-                                                padding: '4px', cursor: 'pointer',
-                                                border: temp.url === icon ? '1px solid #000' : '1px solid transparent',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                            }}
-                                        >
-                                            <img src={icon} alt="" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-                                        </div>
+                            <div className="icon-modal-grid-wrap">
+                                <div className="icon-modal-grid">
+                                    <div className={`icon-modal-item ${selectedIcon === 'VECTOR_CIRCLE' ? 'selected' : ''}`} onClick={() => setSelectedIcon('VECTOR_CIRCLE')}><div style={{ width: 16, height: 16, borderRadius: '50%', background: selectedColor }}></div></div>
+                                    {allIcons.map((ic, idx) => (
+                                        <div key={ic.fullName + idx} className={`icon-modal-item ${selectedIcon === ic.url ? 'selected' : ''}`} onClick={() => { setSelectedIcon(ic.url); }}><img src={getIconUrl(ic.url)} alt={ic.url} onError={e => { e.target.style.display = 'none'; }} /></div>
                                     ))}
                                 </div>
                             </div>
-
-                            {/* Bottom Buttons */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', flexWrap: 'wrap', gap: '8px' }}>
-                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Add Custom...</button>
-                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Clear Custom</button>
-                                    <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>No Icon</button>
-                                </div>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                    <button onClick={() => { onSave(temp); onClose(); }} style={{ padding: '4px 20px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #777', borderRadius: '2px', cursor: 'pointer' }}>OK</button>
-                                    <button onClick={onClose} style={{ padding: '4px 16px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', cursor: 'pointer' }}>Cancel</button>
-                                </div>
-                            </div>
+                        </div>
+                        <div className="icon-modal-footer">
+                            <button className="icon-modal-btn icon-modal-btn-cancel" onClick={onClose}>Cancel</button>
+                            <button className="icon-modal-btn icon-modal-btn-ok" onClick={() => { onSave({ url: selectedIcon, color: selectedColor, scale: selectedSize / 24 }); onClose(); }}>OK</button>
                         </div>
                     </div>
                 </div>
@@ -1389,34 +1169,22 @@
             const [headers, setHeaders] = useState([]);
             const [loading, setLoading] = useState(false);
 
-            const [mapping, setMapping] = useState({
-                SiteName: '',
-                SectorName: '',
-                Longitude: '',
-                Latitude: '',
-                Azimuth: '',
-                BeamCategory: '',
-                RadiusCategory: '',
-                ColorCode: '',
-                IconCategory: '',
-                sitePopupCols: [],
-                sectorPopupCols: []
-            });
+            const [mapping, setMapping] = useState({ SiteName: '', SectorName: '', Longitude: '', Latitude: '', Azimuth: '', BeamCategory: '', RadiusCategory: '', ColorCode: '', IconCategory: '', sitePopupCols: [], sectorPopupCols: [] });
 
-            const [legends, setLegends] = useState({
-                beam: {},
-                radius: {},
-                color: {},
-                icons: {}
-            });
+            // Adjust Default Values State
+            const [defaultBeamwidth, setDefaultBeamwidth] = useState(35);
+            const [defaultRadius, setDefaultRadius] = useState(120);
+            const [defaultIcon, setDefaultIcon] = useState({ url: 'paddle/grn-blank.png', color: "#ffffff", scale: 1.0 });
+            const [defaultSectorColor, setDefaultSectorColor] = useState("#0ea5e9");
 
+            const [legends, setLegends] = useState({ beam: {}, radius: {}, color: {}, icons: {} });
             const [opacity, setOpacity] = useState(50);
             const [globalIconScale, setGlobalIconScale] = useState(1.0);
             const [mapLayer, setMapLayer] = useState('light');
             const [activeIconModal, setActiveIconModal] = useState(null);
 
             const [searchTerm, setSearchTerm] = useState('');
-            const [activeTab, setActiveTab] = useState('upload'); // 'upload', 'columns', 'style', 'filter'
+            const [activeTab, setActiveTab] = useState('upload');
             const [isUploadOpen, setIsUploadOpen] = useState(true);
             const [isColumnsOpen, setIsColumnsOpen] = useState(true);
             const [isVisualOpen, setIsVisualOpen] = useState(true);
@@ -1426,14 +1194,8 @@
             const [isSearchOpen, setIsSearchOpen] = useState(true);
             const [isActionsOpen, setIsActionsOpen] = useState(true);
 
-            const [visibility, setVisibility] = useState({
-                siteMarkers: true,
-                beams: true,
-                siteLabels: false,
-                cellLabels: false
-            });
-
-            const [filterMode, setFilterMode] = useState('both'); // 'site', 'sector', 'both'
+            const [visibility, setVisibility] = useState({ siteMarkers: true, beams: true, siteLabels: false, cellLabels: false });
+            const [filterMode, setFilterMode] = useState('both');
             const [filterColumn, setFilterColumn] = useState('');
             const [filterValue, setFilterValue] = useState('');
             const [hasDrawn, setHasDrawn] = useState(false);
@@ -1451,26 +1213,18 @@
                         else if (filterMode === 'sector') matchText = sector.includes(s);
                         else matchText = site.includes(s) || sector.includes(s);
                     }
-
                     let matchColumn = true;
-                    if (filterColumn && filterValue) {
-                        matchColumn = String(row[filterColumn]) === filterValue;
-                    }
-
+                    if (filterColumn && filterValue) matchColumn = String(row[filterColumn]) === filterValue;
                     return matchText && matchColumn;
                 });
             }, [data, searchTerm, mapping, filterMode, filterColumn, filterValue]);
 
             const uniqueFilterValues = useMemo(() => {
                 if (!filterColumn || !data.length) return [];
-                const vals = [...new Set(data.map(r => String(r[filterColumn]).trim()))].filter(v => v);
-                return vals.sort();
+                return [...new Set(data.map(r => String(r[filterColumn]).trim()))].filter(v => v).sort();
             }, [data, filterColumn]);
 
-            const popupHeaders = useMemo(
-                () => headers.filter(h => String(h).trim() && String(h).trim() !== '#'),
-                [headers]
-            );
+            const popupHeaders = useMemo(() => headers.filter(h => String(h).trim() && String(h).trim() !== '#'), [headers]);
 
             useEffect(() => {
                 if (!isDrawing) return;
@@ -1478,13 +1232,7 @@
                 setDrawProgress(0);
                 const timer = setInterval(() => {
                     progress += 20;
-                    if (progress >= 100) {
-                        setDrawProgress(100);
-                        setIsDrawing(false);
-                        setHasDrawn(true);
-                        clearInterval(timer);
-                        return;
-                    }
+                    if (progress >= 100) { setDrawProgress(100); setIsDrawing(false); setHasDrawn(true); clearInterval(timer); return; }
                     setDrawProgress(progress);
                 }, 80);
                 return () => clearInterval(timer);
@@ -1494,20 +1242,12 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 setLoading(true);
-
                 const ext = file.name.split('.').pop().toLowerCase();
 
                 const processData = (rows, cols) => {
                     const validRows = rows.filter(r => Object.values(r).some(v => v));
                     const validCols = cols.filter(f => f);
-                    setData(validRows);
-                    setHeaders(validCols);
-                    setHasDrawn(false);
-                    setIsDrawing(false);
-                    setDrawProgress(0);
-                    setLoading(false);
-
-                    // Auto-detect mappings
+                    setData(validRows); setHeaders(validCols); setHasDrawn(false); setIsDrawing(false); setDrawProgress(0); setLoading(false);
                     const newMapping = { ...mapping };
                     ['SiteName', 'SectorName', 'Longitude', 'Latitude', 'Azimuth'].forEach(field => {
                         const match = validCols.find(c => c.toLowerCase().includes(field.toLowerCase()));
@@ -1517,73 +1257,46 @@
                 };
 
                 if (ext === 'csv' || ext === 'txt') {
-                    Papa.parse(file, {
-                        header: true,
-                        skipEmptyLines: true,
-                        complete: (results) => {
-                            processData(results.data, results.meta.fields);
-                        }
-                    });
+                    Papa.parse(file, { header: true, skipEmptyLines: true, complete: (results) => processData(results.data, results.meta.fields) });
                 } else if (ext === 'xlsx' || ext === 'xls') {
                     const reader = new FileReader();
                     reader.onload = (evt) => {
                         try {
-                            const bstr = evt.target.result;
-                            const wb = XLSX.read(bstr, { type: 'binary' });
-                            const wsname = wb.SheetNames[0];
-                            const ws = wb.Sheets[wsname];
+                            const wb = XLSX.read(evt.target.result, { type: 'binary' });
+                            const ws = wb.Sheets[wb.SheetNames[0]];
                             const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
-                            if (json.length > 0) {
-                                const cols = Object.keys(json[0]);
-                                processData(json, cols);
-                            } else {
-                                setLoading(false);
-                            }
-                        } catch (err) {
-                            console.error("Error parsing Excel file", err);
-                            setLoading(false);
-                        }
+                            if (json.length > 0) processData(json, Object.keys(json[0]));
+                            else setLoading(false);
+                        } catch (err) { setLoading(false); }
                     };
                     reader.readAsBinaryString(file);
-                } else {
-                    setLoading(false);
-                }
+                } else { setLoading(false); }
             };
 
             const getUniqueValues = (col) => {
                 if (!col) return [];
                 const values = new Set();
-                data.forEach(row => {
-                    if (row[col] !== undefined && row[col] !== null) {
-                        const valStr = String(row[col]).trim();
-                        if (valStr !== '') values.add(valStr);
-                    }
-                });
+                data.forEach(row => { if (row[col] !== undefined && row[col] !== null) { const valStr = String(row[col]).trim(); if (valStr !== '') values.add(valStr); } });
                 return Array.from(values).sort();
             };
 
-            const updateLegend = (type, category, value) => {
-                setLegends(prev => ({
-                    ...prev,
-                    [type]: { ...prev[type], [category]: value }
-                }));
-            };
+            const updateLegend = (type, category, value) => { setLegends(prev => ({ ...prev, [type]: { ...prev[type], [category]: value } })); };
 
             useEffect(() => {
                 if (!mapping.BeamCategory) return;
                 const unique = getUniqueValues(mapping.BeamCategory);
                 const newBeam = {};
-                unique.forEach(val => newBeam[val] = legends.beam[val] || "35");
+                unique.forEach(val => newBeam[val] = legends.beam[val] || defaultBeamwidth.toString());
                 setLegends(prev => ({ ...prev, beam: newBeam }));
-            }, [mapping.BeamCategory, data]);
+            }, [mapping.BeamCategory, data, defaultBeamwidth]);
 
             useEffect(() => {
                 if (!mapping.RadiusCategory) return;
                 const unique = getUniqueValues(mapping.RadiusCategory);
                 const newRad = {};
-                unique.forEach(val => newRad[val] = legends.radius[val] || "120");
+                unique.forEach(val => newRad[val] = legends.radius[val] || defaultRadius.toString());
                 setLegends(prev => ({ ...prev, radius: newRad }));
-            }, [mapping.RadiusCategory, data]);
+            }, [mapping.RadiusCategory, data, defaultRadius]);
 
             useEffect(() => {
                 if (!mapping.ColorCode) return;
@@ -1598,7 +1311,7 @@
                 if (!mapping.IconCategory) return;
                 const unique = getUniqueValues(mapping.IconCategory);
                 const newIcons = {};
-                unique.forEach(val => newIcons[val] = legends.icons[val] || { url: DEFAULT_ICON_URL, color: "#ffffff", scale: 1.0 });
+                unique.forEach(val => newIcons[val] = legends.icons[val] || { url: defaultIcon.url, color: "#ffffff", scale: 1.0 });
                 setLegends(prev => ({ ...prev, icons: newIcons }));
             }, [mapping.IconCategory, data]);
 
@@ -1609,699 +1322,407 @@
                 return (a + hex.substr(4, 2) + hex.substr(2, 2) + hex.substr(0, 2)).toUpperCase();
             };
 
-            const escapeXml = (value) => String(value ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&apos;');
+            const escapeXml = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
             const exportKML = () => {
                 if (!filteredData.length) return;
                 let kml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Network Export</name>`;
-                
-                // Build Sites Folder
                 kml += `<Folder><name>Sites</name>`;
                 const sitesProcessed = {};
-                
+
                 filteredData.forEach(row => {
                     const site = row[mapping.SiteName];
                     const lon = parseFloat(row[mapping.Longitude]);
                     const lat = parseFloat(row[mapping.Latitude]);
                     if (!site || isNaN(lon) || isNaN(lat)) return;
-                    
+
                     if (!sitesProcessed[site]) {
                         sitesProcessed[site] = true;
-                        let iconCfg = { url: DEFAULT_ICON_URL, color: "#ffffff", scale: 1.0 };
+                        let iconCfg = { ...defaultIcon };
                         if (mapping.IconCategory && legends.icons[row[mapping.IconCategory]]) iconCfg = legends.icons[row[mapping.IconCategory]];
-                        
+
                         let sDesc = ``;
-                        mapping.sitePopupCols
-                            .filter(f => f !== mapping.SiteName)
-                            .forEach(f => {
-                                if (row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== '') {
-                                    sDesc += `<b>${f}:</b> ${row[f]}<br>`;
-                                }
-                            });
-                        
-                        if (mapping.sitePopupCols.includes(mapping.SiteName) && site) {
-                            sDesc += `<b>Site:</b> ${site}<br>`;
-                        }
-                        
+                        mapping.sitePopupCols.filter(f => f !== mapping.SiteName).forEach(f => {
+                            if (row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== '') sDesc += `<b>${f}:</b> ${row[f]}<br>`;
+                        });
+                        if (mapping.sitePopupCols.includes(mapping.SiteName) && site) sDesc += `<b>Site:</b> ${site}<br>`;
+
                         const styleId = "s_" + String(site).replace(/[^a-z0-9]/gi, "") + "_" + Object.keys(sitesProcessed).length;
-                        kml += `<Style id="${styleId}"><IconStyle><scale>${iconCfg.scale * globalIconScale}</scale><Icon><href>${iconCfg.url}</href></Icon></IconStyle><LabelStyle><scale>0.8</scale></LabelStyle></Style><Placemark><name>${escapeXml(site)}</name><description><![CDATA[${sDesc}]]></description><styleUrl>#${styleId}</styleUrl><Point><coordinates>${lon},${lat},0</coordinates></Point></Placemark>`;
+                        const iconHref = getIconUrl(iconCfg.url) || iconCfg.url;
+                        kml += `<Style id="${styleId}"><IconStyle><scale>${iconCfg.scale * globalIconScale}</scale><Icon><href>${iconHref}</href></Icon></IconStyle><LabelStyle><scale>0.8</scale></LabelStyle></Style><Placemark><name>${escapeXml(site)}</name><description><![CDATA[${sDesc}]]></description><styleUrl>#${styleId}</styleUrl><Point><coordinates>${lon},${lat},0</coordinates></Point></Placemark>`;
                     }
                 });
-                kml += `</Folder>`;
-                
-                // Build Sectors Folder
-                kml += `<Folder><name>Sectors</name>`;
-                
+                kml += `</Folder><Folder><name>Sectors</name>`;
+
                 filteredData.forEach(row => {
                     const sec = row[mapping.SectorName];
                     const lon = parseFloat(row[mapping.Longitude]);
                     const lat = parseFloat(row[mapping.Latitude]);
                     const az = parseFloat(row[mapping.Azimuth]);
-                    
                     if (isNaN(lat) || isNaN(lon) || isNaN(az)) return;
-                    
-                    let bw = 35, rad = 120, color = "#0ea5e9";
+
+                    let bw = defaultBeamwidth, rad = defaultRadius, color = defaultSectorColor;
                     if (mapping.BeamCategory && legends.beam[row[mapping.BeamCategory]]) bw = parseFloat(legends.beam[row[mapping.BeamCategory]]);
                     if (mapping.RadiusCategory && legends.radius[row[mapping.RadiusCategory]]) rad = parseFloat(legends.radius[row[mapping.RadiusCategory]]);
                     if (mapping.ColorCode && legends.color[row[mapping.ColorCode]]) color = legends.color[row[mapping.ColorCode]];
-                    
+
                     const kmlColor = hexToKml(color, opacity);
-                    
                     let desc = ``;
-                    mapping.sectorPopupCols
-                        .filter(f => f !== mapping.SectorName && f !== mapping.SiteName)
-                        .forEach(f => {
-                            if (row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== '') {
-                                desc += `<b>${f}:</b> ${row[f]}<br>`;
-                            }
-                        });
-                    
-                    if (mapping.sectorPopupCols.includes(mapping.SectorName) && sec) {
-                        desc += `<b>Sector:</b> ${sec}<br>`;
-                    }
-                    
+                    mapping.sectorPopupCols.filter(f => f !== mapping.SectorName && f !== mapping.SiteName).forEach(f => {
+                        if (row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== '') desc += `<b>${f}:</b> ${row[f]}<br>`;
+                    });
+                    if (mapping.sectorPopupCols.includes(mapping.SectorName) && sec) desc += `<b>Sector:</b> ${sec}<br>`;
+
                     const polyCoords = calculateSectorPolygon(lat, lon, az, bw, rad);
-                    const kmlCoords = polyCoords
-                        .filter(c => Number.isFinite(c[0]) && Number.isFinite(c[1]))
-                        .map(c => `${c[1]},${c[0]},0`)
-                        .join(" ");
-                    
-                    if (kmlCoords) {
-                        kml += `<Placemark><name>${escapeXml(sec || '')}</name><description><![CDATA[${desc}]]></description><Style><LineStyle><color>${kmlColor}</color><width>1</width></LineStyle><PolyStyle><color>${kmlColor}</color></PolyStyle><LabelStyle><scale>0</scale></LabelStyle></Style><Polygon><outerBoundaryIs><LinearRing><coordinates>${kmlCoords}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`;
-                    }
+                    const kmlCoords = polyCoords.filter(c => Number.isFinite(c[0]) && Number.isFinite(c[1])).map(c => `${c[1]},${c[0]},0`).join(" ");
+                    if (kmlCoords) kml += `<Placemark><name>${escapeXml(sec || '')}</name><description><![CDATA[${desc}]]></description><Style><LineStyle><color>${kmlColor}</color><width>1</width></LineStyle><PolyStyle><color>${kmlColor}</color></PolyStyle><LabelStyle><scale>0</scale></LabelStyle></Style><Polygon><outerBoundaryIs><LinearRing><coordinates>${kmlCoords}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`;
                 });
                 kml += `</Folder>`;
-                
-                const hasPlacemarks = Object.keys(sitesProcessed).length > 0;
-
-                if (!hasPlacemarks) {
-                    window.alert("No valid rows found to export. Please verify Site, Latitude, Longitude, and Azimuth mappings.");
-                    return;
-                }
-
+                if (Object.keys(sitesProcessed).length === 0) { window.alert("No valid rows found to export. Please verify Location mappings."); return; }
                 kml += `</Document></kml>`;
+
                 const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
                 const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = "Network_Export.kml";
-                link.click();
-                URL.revokeObjectURL(link.href);
+                link.href = URL.createObjectURL(blob); link.download = "Engineering Parameter Export.kml";
+                link.click(); URL.revokeObjectURL(link.href);
             };
-
-
 
             return (
                 <div className="app-wrapper">
-                    {/* Global Header */}
                     <header className="global-header">
-                        <button className="toggle-btn" onClick={() => setSidebarCollapsed(prev => !prev)} style={{ padding: '4px' }}>
-                            <Icons.Menu />
-                        </button>
-                        <h1 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', letterSpacing: '-0.01em', margin: 0 }}>Cell Parameter KML Export Tools</h1>
-                        <div style={{ flex: 1 }}></div>
-
-
+                        <button className="toggle-btn" onClick={() => setSidebarCollapsed(prev => !prev)} style={{ padding: '4px' }}><Icons.Menu /></button>
+                        <h1 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: 0 }}>Cell Parameter KML Export Tools</h1>
                     </header>
 
                     <div className="layout">
-                        {/* Sidebar */}
                         <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
                             <div className="sidebar-tabs">
-                                <button className={`tab-btn ${activeTab === 'upload' ? 'active' : ''}`} onClick={() => setActiveTab('upload')}>
-                                    <Icons.Upload />
-                                    <span>Upload</span>
-                                </button>
-                                <button className={`tab-btn ${activeTab === 'columns' ? 'active' : ''}`} onClick={() => setActiveTab('columns')}>
-                                    <Icons.Columns />
-                                    <span>Columns</span>
-                                </button>
-                                <button className={`tab-btn ${activeTab === 'style' ? 'active' : ''}`} onClick={() => setActiveTab('style')}>
-                                    <Icons.Style />
-                                    <span>Style</span>
-                                </button>
-                                <button className={`tab-btn ${activeTab === 'filter' ? 'active' : ''}`} onClick={() => setActiveTab('filter')}>
-                                    <Icons.Filter />
-                                    <span>Filter</span>
-                                </button>
+                                <button className={`tab-btn ${activeTab === 'upload' ? 'active' : ''}`} onClick={() => setActiveTab('upload')}><Icons.Upload /><span>Upload</span></button>
+                                <button className={`tab-btn ${activeTab === 'columns' ? 'active' : ''}`} onClick={() => setActiveTab('columns')}><Icons.Columns /><span>Columns</span></button>
+                                <button className={`tab-btn ${activeTab === 'style' ? 'active' : ''}`} onClick={() => setActiveTab('style')}><Icons.Style /><span>Style</span></button>
+                                <button className={`tab-btn ${activeTab === 'filter' ? 'active' : ''}`} onClick={() => setActiveTab('filter')}><Icons.Filter /><span>Filter</span></button>
                             </div>
 
                             <div className="sidebar-content custom-scroll">
                                 {activeTab === 'upload' && (
-                                    <>
-                                        <div className="panel">
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
-                                                <div
-                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-                                                    onClick={() => setIsUploadOpen(prev => !prev)}
-                                                >
-                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>1. FILE UPLOAD</span>
-                                                    <div style={{ transform: isUploadOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
-                                                        <Icons.Chevron />
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: isUploadOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
-                                                    <label className="dropzone">
-                                                        <input type="file" hidden accept=".csv,.xlsx,.txt" onChange={handleFileUpload} />
-                                                        <Icons.CloudUpload />
-                                                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a', textAlign: 'center' }}>
-                                                            Drag & Drop or <span style={{ textDecoration: 'underline' }}>Browse</span>
-                                                        </div>
-                                                        <div style={{ fontSize: '10px', color: '#94a3b8', textAlign: 'center' }}>CSV · TXT · XLS · XLSX</div>
-                                                    </label>
-                                                    {data.length > 0 && (
-                                                        <div style={{ marginTop: '12px', fontSize: '11px', color: '#10b981', fontWeight: 600, textAlign: 'center' }}>
-                                                            ✓ {data.length} records loaded
-                                                        </div>
-                                                    )}
-                                                </div>
+                                    <div className="panel">
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsUploadOpen(prev => !prev)}>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>FILE UPLOAD</span>
+                                                <div style={{ transform: isUploadOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
+                                            </div>
+                                            <div style={{ display: isUploadOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                <label className="dropzone">
+                                                    <input type="file" hidden accept=".csv,.xlsx,.txt" onChange={handleFileUpload} />
+                                                    <Icons.CloudUpload />
+                                                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a' }}>Drag & Drop or <span style={{ textDecoration: 'underline' }}>Browse</span></div>
+                                                    <div style={{ fontSize: '10px', color: '#94a3b8' }}>CSV · TXT · XLS · XLSX</div>
+                                                </label>
+                                                {data.length > 0 && <div style={{ marginTop: '12px', fontSize: '11px', color: '#10b981', fontWeight: 600, textAlign: 'center' }}>✓ {data.length} records loaded</div>}
                                             </div>
                                         </div>
-
-
-                                    </>
+                                    </div>
                                 )}
 
                                 {activeTab === 'columns' && (
-                                    <>
-                                        {/* Panel: mapping */}
-                                        <div className="panel">
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
-                                                <div
-                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-                                                    onClick={() => setIsColumnsOpen(prev => !prev)}
-                                                >
-                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>Location Mapping</span>
-                                                    <div style={{ transform: isColumnsOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
-                                                        <Icons.Chevron />
+                                    <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {/* LOCATION MAPPING */}
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsColumnsOpen(prev => !prev)}>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>LOCATION MAPPING</span>
+                                                <div style={{ transform: isColumnsOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
+                                            </div>
+                                            <div style={{ display: isColumnsOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                {([
+                                                    { label: 'Site Name', key: 'SiteName' },
+                                                    { label: 'Sector Name', key: 'SectorName' },
+                                                    { label: 'Longitude', key: 'Longitude' },
+                                                    { label: 'Latitude', key: 'Latitude' },
+                                                    { label: 'Azimuth', key: 'Azimuth' }
+                                                ]).map(field => (
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }} key={field.key}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>{field.label} <span style={{ color: '#ef4444' }}>*</span></div>
+                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping[field.key]} onChange={e => setMapping({ ...mapping, [field.key]: e.target.value })}>
+                                                            <option value="">-- Select --</option>
+                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
                                                     </div>
-                                                </div>
-                                                <div style={{ display: isColumnsOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
-                                                    {([
-                                                        { label: 'Site Name', key: 'SiteName' },
-                                                        { label: 'Sector Name', key: 'SectorName' },
-                                                        { label: 'Longitude', key: 'Longitude' },
-                                                        { label: 'Latitude', key: 'Latitude' },
-                                                        { label: 'Azimuth', key: 'Azimuth' }
-                                                    ]).map(field => (
-                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }} key={field.key}>
-                                                            <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>
-                                                                {field.label} <span style={{ color: '#ef4444' }}>*</span>
-                                                            </div>
-                                                            <select
-                                                                className="form-control"
-                                                                style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }}
-                                                                value={mapping[field.key]}
-                                                                onChange={e => setMapping({ ...mapping, [field.key]: e.target.value })}
-                                                            >
-                                                                <option value="">-- Select --</option>
-                                                                {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                                                            </select>
-                                                        </div>
-                                                    ))}
+                                                ))}
+                                            </div>
+                                        </div>
 
+                                        {/* POPUP SETTINGS */}
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsPopupOpen(prev => !prev)}>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>POPUP SETTINGS</span>
+                                                <div style={{ transform: isPopupOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
+                                            </div>
+                                            <div style={{ display: isPopupOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Site Popup Columns</div>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '8px' }}>
+                                                    <button type="button" onClick={() => setMapping({ ...mapping, sitePopupCols: [...popupHeaders] })} style={{ fontSize: '11px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}>All Columns</button>
+                                                    <button type="button" onClick={() => setMapping({ ...mapping, sitePopupCols: [] })} style={{ fontSize: '11px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}>Clear</button>
+                                                </div>
+                                                <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '8px', marginBottom: '16px' }}>
+                                                    {popupHeaders.map(h => (
+                                                        <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
+                                                            <input type="checkbox" checked={mapping.sitePopupCols.includes(h)} onChange={e => { const newCols = e.target.checked ? [...mapping.sitePopupCols, h] : mapping.sitePopupCols.filter(c => c !== h); setMapping({ ...mapping, sitePopupCols: newCols }); }} />
+                                                            <span style={{ fontSize: '11px', color: '#334155' }}>{h}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+
+                                                <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Sector Popup Columns</div>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '8px' }}>
+                                                    <button type="button" onClick={() => setMapping({ ...mapping, sectorPopupCols: [...popupHeaders] })} style={{ fontSize: '11px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}>All Columns</button>
+                                                    <button type="button" onClick={() => setMapping({ ...mapping, sectorPopupCols: [] })} style={{ fontSize: '11px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}>Clear</button>
+                                                </div>
+                                                <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '8px' }}>
+                                                    {popupHeaders.map(h => (
+                                                        <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
+                                                            <input type="checkbox" checked={mapping.sectorPopupCols.includes(h)} onChange={e => { const newCols = e.target.checked ? [...mapping.sectorPopupCols, h] : mapping.sectorPopupCols.filter(c => c !== h); setMapping({ ...mapping, sectorPopupCols: newCols }); }} />
+                                                            <span style={{ fontSize: '11px', color: '#334155' }}>{h}</span>
+                                                        </label>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
-                                    </>
+                                    </div>
                                 )}
 
                                 {activeTab === 'style' && (
-                                    <>
-                                        {/* Panel: Attributes */}
-                                        <div className="panel">
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
-                                                <div
-                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-                                                    onClick={() => setIsVisualOpen(prev => !prev)}
-                                                >
-                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>4. VISUAL ATTRIBUTES</span>
-                                                    <div style={{ transform: isVisualOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
-                                                        <Icons.Chevron />
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: isVisualOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                    <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {/* VISUAL ATTRIBUTES */}
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsVisualOpen(prev => !prev)}>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>VISUAL ATTRIBUTES</span>
+                                                <div style={{ transform: isVisualOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
+                                            </div>
+                                            <div style={{ display: isVisualOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
 
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Beamwidth Column</div>
-                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.BeamCategory} onChange={e => setMapping({ ...mapping, BeamCategory: e.target.value })}>
-                                                            <option value="">-- Manual (35°) --</option>
+                                                {/* Combined Sector Color Strategy */}
+                                                <div style={{ marginBottom: '24px' }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Sector Color Strategy</div>
+                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                        <select className="form-control" style={{ flex: 1, height: '32px', fontSize: '12px' }} value={mapping.ColorCode} onChange={e => setMapping({ ...mapping, ColorCode: e.target.value })}>
+                                                            <option value="">-- Apply Default Color to All --</option>
                                                             {headers.map(h => <option key={h} value={h}>{h}</option>)}
                                                         </select>
-                                                    </div>
-                                                    {mapping.BeamCategory && Object.keys(legends.beam).map(cat => (
-                                                        <div className="legend-input-row" key={cat} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                            <span style={{ fontSize: '10px', color: '#64748b' }}>{cat}</span>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '60%' }}>
-                                                                <input
-                                                                    type="number"
-                                                                    style={{ width: '100%', height: '24px', fontSize: '11px', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '0 4px' }}
-                                                                    value={legends.beam[cat] || ''}
-                                                                    onChange={e => updateLegend('beam', cat, e.target.value)}
-                                                                />
-                                                                <div style={{ fontSize: '10px', color: '#94a3b8' }}>deg</div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', marginTop: '16px' }}>
-                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Radius Column</div>
-                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.RadiusCategory} onChange={e => setMapping({ ...mapping, RadiusCategory: e.target.value })}>
-                                                            <option value="">-- Manual (120m) --</option>
-                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                                                        </select>
-                                                    </div>
-                                                    {mapping.RadiusCategory && Object.keys(legends.radius).map(cat => (
-                                                        <div className="legend-input-row" key={cat} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                            <span style={{ fontSize: '10px', color: '#64748b' }}>{cat}</span>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '60%' }}>
-                                                                <input
-                                                                    type="number"
-                                                                    style={{ width: '100%', height: '24px', fontSize: '11px', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '0 4px' }}
-                                                                    value={legends.radius[cat] || ''}
-                                                                    onChange={e => updateLegend('radius', cat, e.target.value)}
-                                                                />
-                                                                <div style={{ fontSize: '10px', color: '#94a3b8' }}>m</div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', marginTop: '16px' }}>
-                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Sector Color</div>
-                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.ColorCode} onChange={e => setMapping({ ...mapping, ColorCode: e.target.value })}>
-                                                            <option value="">-- Single Color --</option>
-                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                                                        </select>
+                                                        <input type="color" value={defaultSectorColor} onChange={e => setDefaultSectorColor(e.target.value)} style={{ width: '32px', height: '32px', padding: 0, border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer' }} title="Default Sector Color" />
                                                     </div>
                                                     {mapping.ColorCode && Object.keys(legends.color).map(cat => (
-                                                        <div className="legend-input-row" key={cat} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                        <div className="legend-input-row" key={cat} style={{ marginTop: '6px' }}>
                                                             <span style={{ fontSize: '10px', color: '#64748b' }}>{cat}</span>
-                                                            <div style={{ display: 'flex', alignItems: 'center', width: '60%', justifyContent: 'flex-end' }}>
-                                                                <input
-                                                                    type="color"
-                                                                    style={{ width: '32px', height: '24px', border: '1px solid #e2e8f0', cursor: 'pointer', padding: 0, borderRadius: '4px' }}
-                                                                    value={legends.color[cat] || '#000000'}
-                                                                    onChange={e => updateLegend('color', cat, e.target.value)}
-                                                                />
-                                                            </div>
+                                                            <input type="color" style={{ width: '32px', height: '24px', cursor: 'pointer' }} value={legends.color[cat] || '#000000'} onChange={e => updateLegend('color', cat, e.target.value)} />
                                                         </div>
                                                     ))}
-
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px' }}>
-                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Global Opacity</div>
-                                                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>{opacity}%</div>
-                                                    </div>
-                                                    <div style={{ marginTop: '8px' }}>
-                                                        <input type="range" min="0" max="100" style={{ width: '100%', accentColor: '#334155' }} value={opacity} onChange={e => setOpacity(e.target.value)} />
-                                                    </div>
-
                                                 </div>
-                                            </div>
-                                        </div>
 
-                                        {/* Panel: Icons */}
-                                        <div className="panel">
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
-                                                <div
-                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-                                                    onClick={() => setIsIconOpen(prev => !prev)}
-                                                >
-                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>5. ICON SETTINGS</span>
-                                                    <div style={{ transform: isIconOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
-                                                        <Icons.Chevron />
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: isIconOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
-
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Icon Category</div>
-                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.IconCategory} onChange={e => setMapping({ ...mapping, IconCategory: e.target.value })}>
-                                                            <option value="">-- Default Icon --</option>
+                                                {/* Beamwidth Slicer Logic */}
+                                                <div style={{ marginBottom: '24px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Beamwidth Column</div>
+                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.BeamCategory} onChange={e => setMapping({ ...mapping, BeamCategory: e.target.value })}>
+                                                            <option value="">-- Manual --</option>
                                                             {headers.map(h => <option key={h} value={h}>{h}</option>)}
                                                         </select>
                                                     </div>
+                                                    {!mapping.BeamCategory ? (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f8fafc', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                            <input type="range" min="10" max="360" step="5" value={defaultBeamwidth} onChange={e => setDefaultBeamwidth(parseInt(e.target.value) || 35)} style={{ flex: 1 }} />
+                                                            <span style={{ fontSize: '11px', fontWeight: 700, width: '32px', textAlign: 'right', color: '#0f172a' }}>{defaultBeamwidth}°</span>
+                                                        </div>
+                                                    ) : (
+                                                        Object.keys(legends.beam).map(cat => (
+                                                            <div className="legend-input-row" key={cat}>
+                                                                <span style={{ fontSize: '10px', color: '#64748b' }}>{cat}</span>
+                                                                <input type="number" value={legends.beam[cat] || ''} onChange={e => updateLegend('beam', cat, e.target.value)} /> <div style={{ fontSize: '10px', color: '#94a3b8', marginRight: '4px' }}>deg</div>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+
+                                                {/* Radius Slicer Logic */}
+                                                <div style={{ marginBottom: '24px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Radius Column</div>
+                                                        <select className="form-control" style={{ width: '60%', height: '32px', fontSize: '12px', padding: '0 8px' }} value={mapping.RadiusCategory} onChange={e => setMapping({ ...mapping, RadiusCategory: e.target.value })}>
+                                                            <option value="">-- Manual --</option>
+                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    {!mapping.RadiusCategory ? (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f8fafc', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                            <input type="range" min="10" max="1000" step="10" value={defaultRadius} onChange={e => setDefaultRadius(parseInt(e.target.value) || 120)} style={{ flex: 1 }} />
+                                                            <span style={{ fontSize: '11px', fontWeight: 700, width: '36px', textAlign: 'right', color: '#0f172a' }}>{defaultRadius}m</span>
+                                                        </div>
+                                                    ) : (
+                                                        Object.keys(legends.radius).map(cat => (
+                                                            <div className="legend-input-row" key={cat}>
+                                                                <span style={{ fontSize: '10px', color: '#64748b' }}>{cat}</span>
+                                                                <input type="number" value={legends.radius[cat] || ''} onChange={e => updateLegend('radius', cat, e.target.value)} /> <div style={{ fontSize: '10px', color: '#94a3b8', marginRight: '4px' }}>m</div>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Global Opacity</div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '60%' }}>
+                                                        <input type="range" min="0" max="100" style={{ flex: 1 }} value={opacity} onChange={e => setOpacity(e.target.value)} />
+                                                        <div style={{ fontSize: '10px', color: '#94a3b8', width: '30px', textAlign: 'right' }}>{opacity}%</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* ICON SETTINGS */}
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsIconOpen(prev => !prev)}>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>ICON SETTINGS</span>
+                                                <div style={{ transform: isIconOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
+                                            </div>
+                                            <div style={{ display: isIconOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+
+                                                {/* Combined Icon Strategy */}
+                                                <div style={{ marginBottom: '24px' }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Icon Strategy</div>
+                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                        <select className="form-control" style={{ flex: 1, height: '32px', fontSize: '12px' }} value={mapping.IconCategory} onChange={e => setMapping({ ...mapping, IconCategory: e.target.value })}>
+                                                            <option value="">-- Apply Default Icon to All --</option>
+                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
+                                                        <div onClick={() => setActiveIconModal('__DEFAULT__')} style={{ width: '32px', height: '32px', border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }} title="Default Icon">
+                                                            <img src={getIconUrl(defaultIcon.url) || defaultIcon.url} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                                                        </div>
+                                                    </div>
                                                     {mapping.IconCategory && (
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>Categories ({Object.keys(legends.icons).length})</span>
-                                                            <button
-                                                                style={{ fontSize: '11px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
-                                                                onClick={() => {
-                                                                    const resetIcons = {};
-                                                                    Object.keys(legends.icons).forEach(cat => resetIcons[cat] = { url: DEFAULT_ICON_URL, color: "#ffffff", scale: 1.0 });
-                                                                    setLegends(prev => ({ ...prev, icons: resetIcons }));
-                                                                }}
-                                                            >
-                                                                Reset All
-                                                            </button>
+                                                        <div style={{ marginTop: '8px' }}>
+                                                            {Object.keys(legends.icons).map(cat => (
+                                                                <div key={cat} className="legend-input-row" style={{ cursor: 'pointer', height: '40px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0 12px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={() => setActiveIconModal(cat)}>
+                                                                    <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '11px', fontWeight: 500, paddingRight: '8px' }}>{cat}</span>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        <div style={{ width: '24px', height: '24px', overflow: 'hidden', flexShrink: 0, background: '#fff', borderRadius: '4px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                            <img src={getIconUrl(legends.icons[cat]?.url) || getIconUrl(defaultIcon.url) || defaultIcon.url} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                                                                        </div>
+                                                                        <Icons.Chevron />
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     )}
-                                                    {mapping.IconCategory && Object.keys(legends.icons).map(cat => (
-                                                        <div
-                                                            key={cat}
-                                                            className="legend-input-row"
-                                                            style={{ cursor: 'pointer', height: '40px', margin: '0 0 6px 0', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0 12px', background: '#fff' }}
-                                                            onClick={() => setActiveIconModal(cat)}
-                                                        >
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                                                                <div style={{ width: '24px', height: '24px', overflow: 'hidden', flexShrink: 0, background: '#fff', borderRadius: '4px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                    <img
-                                                                        src={legends.icons[cat]?.url || DEFAULT_ICON_URL}
-                                                                        style={{
-                                                                            width: '20px',
-                                                                            height: '20px',
-                                                                            objectFit: 'contain'
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '11px', fontWeight: 500 }}>{cat}</span>
-                                                            </div>
-                                                            <Icons.Chevron />
+                                                </div>
+
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Global Icon Scale</div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '60%' }}>
+                                                        <input type="range" min="0.5" max="3" step="0.1" style={{ flex: 1 }} value={globalIconScale} onChange={e => setGlobalIconScale(parseFloat(e.target.value))} />
+                                                        <div style={{ fontSize: '10px', color: '#94a3b8', width: '30px', textAlign: 'right' }}>{globalIconScale}x</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* VISIBILITY */}
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsVisibilityOpen(prev => !prev)}>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>VISIBILITY</span>
+                                                <div style={{ transform: isVisibilityOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
+                                            </div>
+                                            <div style={{ display: isVisibilityOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                    {[{ id: 'beams', label: 'Sector Beams' }, { id: 'siteMarkers', label: 'Site Markers' }, { id: 'siteLabels', label: 'Site Labels' }, { id: 'cellLabels', label: 'Cell Labels' }].map(opt => (
+                                                        <div key={opt.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>{opt.label}</span>
+                                                            <label className="switch">
+                                                                <input type="checkbox" checked={visibility[opt.id]} onChange={e => setVisibility(prev => ({ ...prev, [opt.id]: e.target.checked }))} />
+                                                                <span className="slider"></span>
+                                                            </label>
                                                         </div>
                                                     ))}
-
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px' }}>
-                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>Global Icon Scale</div>
-                                                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>{globalIconScale}x</div>
-                                                    </div>
-                                                    <div style={{ marginTop: '8px' }}>
-                                                        <input type="range" min="0.5" max="3" step="0.1" style={{ width: '100%', accentColor: '#334155' }} value={globalIconScale} onChange={e => setGlobalIconScale(parseFloat(e.target.value))} />
-                                                    </div>
-
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* Panel: Visibility */}
-                                        <div className="panel">
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
-                                                <div
-                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-                                                    onClick={() => setIsVisibilityOpen(prev => !prev)}
-                                                >
-                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>6. VISIBILITY</span>
-                                                    <div style={{ transform: isVisibilityOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
-                                                        <Icons.Chevron />
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: isVisibilityOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                                        {[
-                                                            { id: 'beams', label: 'Sector Beams' },
-                                                            { id: 'siteMarkers', label: 'Site Markers' },
-                                                            { id: 'siteLabels', label: 'Site Labels' },
-                                                            { id: 'cellLabels', label: 'Cell Labels' }
-                                                        ].map(opt => (
-                                                            <div key={opt.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#334155' }}>{opt.label}</span>
-                                                                <label className="switch">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={visibility[opt.id]}
-                                                                        onChange={e => setVisibility(prev => ({ ...prev, [opt.id]: e.target.checked }))}
-                                                                    />
-                                                                    <span className="slider"></span>
-                                                                </label>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Panel: Popups */}
-                                        <div className="panel">
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
-                                                <div
-                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-                                                    onClick={() => setIsPopupOpen(prev => !prev)}
-                                                >
-                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>7. POPUP SETTINGS</span>
-                                                    <div style={{ transform: isPopupOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
-                                                        <Icons.Chevron />
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: isPopupOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
-                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Site Popup Columns</div>
-                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '8px' }}>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setMapping({ ...mapping, sitePopupCols: [...popupHeaders] })}
-                                                            style={{ fontSize: '11px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
-                                                        >
-                                                            All Columns
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setMapping({ ...mapping, sitePopupCols: [] })}
-                                                            style={{ fontSize: '11px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                    </div>
-                                                    <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '8px', marginBottom: '16px' }}>
-                                                        {popupHeaders.map(h => (
-                                                            <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    style={{ cursor: 'pointer', accentColor: '#334155' }}
-                                                                    checked={mapping.sitePopupCols.includes(h)}
-                                                                    onChange={e => {
-                                                                        const newCols = e.target.checked
-                                                                            ? [...mapping.sitePopupCols, h]
-                                                                            : mapping.sitePopupCols.filter(c => c !== h);
-                                                                        setMapping({ ...mapping, sitePopupCols: newCols });
-                                                                    }}
-                                                                />
-                                                                <span style={{ fontSize: '11px', color: '#334155' }}>{h}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-
-                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Sector Popup Columns</div>
-                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '8px' }}>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setMapping({ ...mapping, sectorPopupCols: [...popupHeaders] })}
-                                                            style={{ fontSize: '11px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
-                                                        >
-                                                            All Columns
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setMapping({ ...mapping, sectorPopupCols: [] })}
-                                                            style={{ fontSize: '11px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0 }}
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                    </div>
-                                                    <div className="custom-scroll" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '8px' }}>
-                                                        {popupHeaders.map(h => (
-                                                            <label key={h} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' }}>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    style={{ cursor: 'pointer', accentColor: '#334155' }}
-                                                                    checked={mapping.sectorPopupCols.includes(h)}
-                                                                    onChange={e => {
-                                                                        const newCols = e.target.checked
-                                                                            ? [...mapping.sectorPopupCols, h]
-                                                                            : mapping.sectorPopupCols.filter(c => c !== h);
-                                                                        setMapping({ ...mapping, sectorPopupCols: newCols });
-                                                                    }}
-                                                                />
-                                                                <span style={{ fontSize: '11px', color: '#334155' }}>{h}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </>
+                                    </div>
                                 )}
 
                                 {activeTab === 'filter' && (
-                                    <>
-                                        {/* Panel: Search */}
-                                        <div className="panel">
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
-                                                <div
-                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-                                                    onClick={() => setIsSearchOpen(prev => !prev)}
-                                                >
-                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>7. SEARCH & FILTER</span>
-                                                    <div style={{ transform: isSearchOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
-                                                        <Icons.Chevron />
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: isSearchOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
-                                                    {/* Filter Mode Control */}
-                                                    <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '4px', marginBottom: '16px' }}>
-                                                        {['site', 'sector', 'both'].map(m => (
-                                                            <button
-                                                                key={m}
-                                                                onClick={() => setFilterMode(m)}
-                                                                style={{
-                                                                    flex: 1, height: '32px', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 600, textTransform: 'capitalize',
-                                                                    background: filterMode === m ? '#fff' : 'transparent',
-                                                                    color: filterMode === m ? '#1e293b' : '#64748b',
-                                                                    boxShadow: filterMode === m ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                                                                    cursor: 'pointer', transition: 'all 0.2s'
-                                                                }}
-                                                            >
-                                                                {m}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-
-                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Search</div>
-                                                    <div style={{ position: 'relative', marginBottom: '16px' }}>
-                                                        <input
-                                                            type="text"
-                                                            placeholder={`Search ${filterMode}...`}
-                                                            className="form-control"
-                                                            value={searchTerm}
-                                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                                            style={{ backgroundColor: '#f8fafc', color: '#0f172a', border: '1px solid #e2e8f0', width: '100%', height: '38px', fontSize: '12px', padding: '0 36px 0 12px', borderRadius: '6px' }}
-                                                        />
-                                                        <div style={{ position: 'absolute', right: '12px', top: '11px', color: '#94a3b8' }}>
-                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                                        </div>
-                                                    </div>
-
-                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Column Filter</div>
-                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                                                        <select
-                                                            className="form-control"
-                                                            style={{ height: '38px', fontSize: '12px' }}
-                                                            value={filterColumn}
-                                                            onChange={e => { setFilterColumn(e.target.value); setFilterValue(''); }}
-                                                        >
-                                                            <option value="">Select Column...</option>
-                                                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                                                        </select>
-                                                        <select
-                                                            className="form-control"
-                                                            style={{ height: '38px', fontSize: '12px' }}
-                                                            value={filterValue}
-                                                            disabled={!filterColumn}
-                                                            onChange={e => setFilterValue(e.target.value)}
-                                                        >
-                                                            <option value="">Select Value...</option>
-                                                            {uniqueFilterValues.map(v => <option key={v} value={v}>{v}</option>)}
-                                                        </select>
-                                                    </div>
-                                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                        {(filterColumn || filterValue || searchTerm) && (
-                                                            <button
-                                                                style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: '4px 0' }}
-                                                                onClick={() => { setFilterColumn(''); setFilterValue(''); setSearchTerm(''); }}
-                                                            >
-                                                                Clear all filters
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                </div>
+                                    <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {/* SEARCH & FILTER */}
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsSearchOpen(prev => !prev)}>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>SEARCH & FILTER</span>
+                                                <div style={{ transform: isSearchOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
                                             </div>
-                                        </div>
-
-                                        {/* Panel: Actions */}
-                                        <div className="panel">
-                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
-                                                <div
-                                                    style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-                                                    onClick={() => setIsActionsOpen(prev => !prev)}
-                                                >
-                                                    <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>8. ACTIONS & EXPORT</span>
-                                                    <div style={{ transform: isActionsOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
-                                                        <Icons.Chevron />
-                                                    </div>
+                                            <div style={{ display: isSearchOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
+                                                <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '4px', marginBottom: '16px' }}>
+                                                    {['site', 'sector', 'both'].map(m => (
+                                                        <button key={m} onClick={() => setFilterMode(m)} style={{ flex: 1, height: '32px', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 600, textTransform: 'capitalize', background: filterMode === m ? '#fff' : 'transparent', color: filterMode === m ? '#1e293b' : '#64748b', boxShadow: filterMode === m ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}>{m}</button>
+                                                    ))}
                                                 </div>
-                                                <div style={{ display: isActionsOpen ? 'flex' : 'none', padding: '0 16px 16px 16px', flexDirection: 'column', gap: '8px' }}>
-                                                    <button
-                                                        className="btn"
-                                                        disabled={data.length === 0 || isDrawing}
-                                                        onClick={() => {
-                                                            if (isDrawing || data.length === 0) return;
-                                                            setHasDrawn(false);
-                                                            setIsDrawing(true);
-                                                        }}
-                                                        style={{ backgroundColor: (data.length === 0 || isDrawing) ? '#94a3b8' : '#0f172a', color: '#fff', border: 'none', width: '100%', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '6px', cursor: (data.length === 0 || isDrawing) ? 'not-allowed' : 'pointer' }}
-                                                    >
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                                                        {isDrawing ? 'Drawing...' : 'Calculate & Draw'}
-                                                    </button>
-                                                    {isDrawing && (
-                                                        <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                                                            <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
-                                                                <div style={{ width: `${drawProgress}%`, height: '100%', background: '#0f172a', transition: 'width 0.08s linear' }}></div>
-                                                            </div>
-                                                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#334155', minWidth: '34px', textAlign: 'right' }}>{drawProgress}%</span>
-                                                        </div>
+                                                <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Search</div>
+                                                <div style={{ position: 'relative', marginBottom: '16px' }}>
+                                                    <input type="text" placeholder={`Search ${filterMode}...`} className="form-control" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ backgroundColor: '#f8fafc', color: '#0f172a', border: '1px solid #e2e8f0', width: '100%', height: '38px', fontSize: '12px', padding: '0 36px 0 12px', borderRadius: '6px' }} />
+                                                    <div style={{ position: 'absolute', right: '12px', top: '11px', color: '#94a3b8' }}><Icons.Filter /></div>
+                                                </div>
+                                                <div style={{ fontSize: '11px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Column Filter</div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                                                    <select className="form-control" style={{ height: '38px', fontSize: '12px' }} value={filterColumn} onChange={e => { setFilterColumn(e.target.value); setFilterValue(''); }}>
+                                                        <option value="">Select Column...</option>
+                                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                                    </select>
+                                                    <select className="form-control" style={{ height: '38px', fontSize: '12px' }} value={filterValue} disabled={!filterColumn} onChange={e => setFilterValue(e.target.value)}>
+                                                        <option value="">Select Value...</option>
+                                                        {uniqueFilterValues.map(v => <option key={v} value={v}>{v}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                    {(filterColumn || filterValue || searchTerm) && (
+                                                        <button style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, padding: '4px 0' }} onClick={() => { setFilterColumn(''); setFilterValue(''); setSearchTerm(''); }}>Clear all filters</button>
                                                     )}
-
-                                                    <button
-                                                        className="btn"
-                                                        disabled={data.length === 0}
-                                                        onClick={exportKML}
-                                                        style={{ backgroundColor: data.length === 0 ? '#f1f5f9' : '#fff', color: data.length === 0 ? '#94a3b8' : '#334155', border: '1px solid #e2e8f0', width: '100%', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '6px', cursor: data.length === 0 ? 'not-allowed' : 'pointer', position: 'relative' }}
-                                                    >
-                                                        <Icons.Export /> Export KML
-                                                        <div style={{ fontSize: '10px', color: '#94a3b8', position: 'absolute', right: '12px' }}>(Earth)</div>
-                                                    </button>
-
-                                                    <button
-                                                        className="btn"
-                                                        disabled={data.length === 0}
-                                                        onClick={() => { if (window.confirm('Are you sure you want to clear all data?')) { setData([]); setHeaders([]); setSearchTerm(''); setHasDrawn(false); setIsDrawing(false); setDrawProgress(0); } }}
-                                                        style={{ backgroundColor: data.length === 0 ? '#f1f5f9' : '#fff', color: data.length === 0 ? '#94a3b8' : '#ef4444', border: data.length === 0 ? '1px solid #e2e8f0' : '1px solid #fee2e2', width: '100%', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '6px', cursor: data.length === 0 ? 'not-allowed' : 'pointer' }}
-                                                    >
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> Clear Data
-                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
-                                    </>
+
+                                        {/* ACTIONS & EXPORT */}
+                                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                                            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsActionsOpen(prev => !prev)}>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>ACTIONS & EXPORT</span>
+                                                <div style={{ transform: isActionsOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
+                                            </div>
+                                            <div style={{ display: isActionsOpen ? 'flex' : 'none', padding: '0 16px 16px 16px', flexDirection: 'column', gap: '8px' }}>
+                                                <button className="btn" disabled={data.length === 0 || isDrawing} onClick={() => { if (!isDrawing && data.length > 0) { setHasDrawn(false); setIsDrawing(true); } }} style={{ backgroundColor: (data.length === 0 || isDrawing) ? '#94a3b8' : '#0f172a' }}>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> {isDrawing ? 'Drawing...' : 'Calculate & Draw'}
+                                                </button>
+                                                {isDrawing && (
+                                                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                                                        <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}><div style={{ width: `${drawProgress}%`, height: '100%', background: '#0f172a', transition: 'width 0.08s linear' }}></div></div>
+                                                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#334155', minWidth: '34px', textAlign: 'right' }}>{drawProgress}%</span>
+                                                    </div>
+                                                )}
+                                                <button className="btn" disabled={data.length === 0} onClick={exportKML} style={{ backgroundColor: data.length === 0 ? '#f1f5f9' : '#fff', color: data.length === 0 ? '#94a3b8' : '#334155', border: '1px solid #e2e8f0' }}>
+                                                    <Icons.Export /> Export KML <div style={{ fontSize: '10px', color: '#94a3b8', position: 'absolute', right: '12px' }}>(Earth)</div>
+                                                </button>
+                                                <button className="btn" disabled={data.length === 0} onClick={() => { if (window.confirm('Are you sure you want to clear all data?')) { setData([]); setHeaders([]); setSearchTerm(''); setHasDrawn(false); setIsDrawing(false); setDrawProgress(0); } }} style={{ backgroundColor: data.length === 0 ? '#f1f5f9' : '#fff', color: data.length === 0 ? '#94a3b8' : '#ef4444', border: data.length === 0 ? '1px solid #e2e8f0' : '1px solid #fee2e2' }}>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> Clear Data
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Main Content */}
-                        <div className={`main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
+                        <div className="main-content">
                             <div id="map-container" style={{ position: 'relative', flex: 1, height: '100%' }}>
-                                <MapView
-                                    data={hasDrawn ? filteredData : []}
-                                    searchTerm={searchTerm}
-                                    mapping={mapping}
-                                    legends={legends}
-                                    opacity={opacity}
-                                    iconScale={globalIconScale}
-                                    mapLayer={mapLayer}
-                                    visibility={visibility}
-                                    sidebarOpen={!sidebarCollapsed}
-                                />
-
-                                {/* Layer Switcher */}
-                                <div className="layer-switcher" style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1000 }}>
-                                    <LayerSwitcher current={mapLayer} onSelect={setMapLayer} />
-                                </div>
-
-
+                                <MapView data={hasDrawn ? filteredData : []} searchTerm={searchTerm} mapping={mapping} legends={legends} opacity={opacity} iconScale={globalIconScale} mapLayer={mapLayer} defaultBeamwidth={defaultBeamwidth} defaultRadius={defaultRadius} defaultIcon={defaultIcon} defaultSectorColor={defaultSectorColor} visibility={visibility} />
+                                <div className="layer-switcher" style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1000 }}><LayerSwitcher current={mapLayer} onSelect={setMapLayer} /></div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Modals */}
                     {activeIconModal && (
-                        <IconPickerModal
-                            category={activeIconModal}
-                            config={legends.icons[activeIconModal]}
-                            onSave={config => updateLegend('icons', activeIconModal, config)}
-                            onClose={() => setActiveIconModal(null)}
-                        />
+                        <IconPickerModal category={activeIconModal} config={activeIconModal === '__DEFAULT__' ? defaultIcon : legends.icons[activeIconModal]} onSave={config => { if (activeIconModal === '__DEFAULT__') { setDefaultIcon(config); } else { updateLegend('icons', activeIconModal, config); } }} onClose={() => setActiveIconModal(null)} />
                     )}
                 </div>
             );
