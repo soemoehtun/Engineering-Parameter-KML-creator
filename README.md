@@ -193,7 +193,3 @@ The entire application is contained within a single file for maximum portability
 
 This project is intended for professional use and is provided "as is" without warranty of any kind. 
 
-*(If you intend to open-source this, you can specify an MIT or GPL license here. Otherwise, you can state "All Rights Reserved" or "Internal Use Only" based on your company policies).*
-
----
-*Developed by Soe Moe Tun*
