@@ -6,33 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cell Parameter KML Export Tools</title>
 
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
 
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    <!-- Leaflet MarkerCluster CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 
-    <!-- React 18 -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
-    <!-- Babel Standalone -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Leaflet MarkerCluster JS -->
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
-    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-    <!-- SheetJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
@@ -907,6 +898,36 @@
             return GE_ICON_BASE + '/' + url;
         };
 
+        const evaluateRangeMatch = (numVal, range) => {
+            if (isNaN(numVal)) return false;
+            const rMin = range.min !== '' ? parseFloat(range.min) : null;
+            const rMax = range.max !== '' ? parseFloat(range.max) : null;
+            const opMin = range.opMin || '>=';
+            const opMax = range.opMax || '<=';
+
+            let minPass = true;
+            if (rMin !== null && !isNaN(rMin)) {
+                if (opMin === '>=') minPass = numVal >= rMin;
+                else if (opMin === '>') minPass = numVal > rMin;
+                else if (opMin === '=') minPass = numVal === rMin;
+                else if (opMin === '!=') minPass = numVal !== rMin;
+                else if (opMin === '<=') minPass = numVal <= rMin;
+                else if (opMin === '<') minPass = numVal < rMin;
+            }
+
+            let maxPass = true;
+            if (rMax !== null && !isNaN(rMax)) {
+                if (opMax === '<=') maxPass = numVal <= rMax;
+                else if (opMax === '<') maxPass = numVal < rMax;
+                else if (opMax === '=') maxPass = numVal === rMax;
+                else if (opMax === '!=') maxPass = numVal !== rMax;
+                else if (opMax === '>=') maxPass = numVal >= rMax;
+                else if (opMax === '>') maxPass = numVal > rMax;
+            }
+
+            return minPass && maxPass;
+        };
+
         const LayerSwitcher = ({ current, onSelect }) => {
             const [isExpanded, setIsExpanded] = useState(false);
             const layers = [
@@ -953,7 +974,7 @@
             return coords;
         };
 
-        const MapView = ({ data, mapping, legends, opacity, iconScale, mapLayer, defaultBeamwidth, defaultRadius, defaultIcon, defaultSectorColor, visibility, searchTerm }) => {
+        const MapView = ({ data, mapping, legends, opacity, iconScale, mapLayer, defaultBeamwidth, defaultRadius, defaultIcon, defaultSectorColor, visibility, searchTerm, colorMode, colorRanges, iconMode, iconRanges }) => {
             const mapRef = useRef(null);
             const mapInst = useRef(null);
             const clusterGroupRef = useRef(null);
@@ -988,7 +1009,6 @@
                 };
             }, []);
 
-            // ResizeObserver to handle sidebar toggle and container resize
             useEffect(() => {
                 const container = mapRef.current;
                 if (!container || !mapInst.current) return;
@@ -1038,7 +1058,23 @@
 
                     if (mapping.BeamCategory && legends.beam[row[mapping.BeamCategory]]) bw = parseFloat(legends.beam[row[mapping.BeamCategory]]);
                     if (mapping.RadiusCategory && legends.radius[row[mapping.RadiusCategory]]) rad = parseFloat(legends.radius[row[mapping.RadiusCategory]]);
-                    if (mapping.ColorCode && legends.color[row[mapping.ColorCode]]) color = legends.color[row[mapping.ColorCode]];
+                    
+                    // Color evaluation
+                    if (mapping.ColorCode) {
+                        if (colorMode === 'range') {
+                            const numVal = parseFloat(row[mapping.ColorCode]);
+                            if (!isNaN(numVal)) {
+                                for (const range of colorRanges) {
+                                    if (evaluateRangeMatch(numVal, range)) {
+                                        color = range.color;
+                                        break;
+                                    }
+                                }
+                            }
+                        } else if (legends.color[row[mapping.ColorCode]]) {
+                            color = legends.color[row[mapping.ColorCode]];
+                        }
+                    }
 
                     if (visibility.beams && !isNaN(az)) {
                         const polyCoords = calculateSectorPolygon(lat, lon, az, bw, rad);
@@ -1057,11 +1093,26 @@
                         let iUrl = getIconUrl(defaultIcon.url) || defaultIcon.url;
                         let iScale = defaultIcon.scale;
 
-                        if (mapping.IconCategory && legends.icons[row[mapping.IconCategory]]) {
-                            const iconConfig = legends.icons[row[mapping.IconCategory]];
-                            iUrl = getIconUrl(iconConfig.url) || iconConfig.url;
-                            iScale = iconConfig.scale;
+                        // Icon evaluation
+                        if (mapping.IconCategory) {
+                            if (iconMode === 'range') {
+                                const numVal = parseFloat(row[mapping.IconCategory]);
+                                if (!isNaN(numVal)) {
+                                    for (const range of iconRanges) {
+                                        if (evaluateRangeMatch(numVal, range)) {
+                                            iUrl = getIconUrl(range.iconConfig.url) || range.iconConfig.url;
+                                            iScale = range.iconConfig.scale;
+                                            break;
+                                        }
+                                    }
+                                }
+                            } else if (legends.icons[row[mapping.IconCategory]]) {
+                                const iconConfig = legends.icons[row[mapping.IconCategory]];
+                                iUrl = getIconUrl(iconConfig.url) || iconConfig.url;
+                                iScale = iconConfig.scale;
+                            }
                         }
+
                         const s = 24 * iScale * iconScale;
                         const icon = L.divIcon({ className: 'custom-site-icon', html: `<div style="width:${s}px; height:${s}px; overflow:hidden; position:relative;"><img src="${iUrl}" style="width:${s}px; height:${s}px;"></div>`, iconSize: [s, s], iconAnchor: [s / 2, s / 2] });
                         const marker = L.marker([lat, lon], { icon });
@@ -1075,14 +1126,13 @@
                     }
                 });
                 clusterGroupRef.current.addLayers(markersToCluster);
-                // Only fitBounds when data first appears or data set changes (new file / filter), not on style changes
                 const dataChanged = data.length !== prevDataLenRef.current;
                 prevDataLenRef.current = data.length;
                 if (bounds.length > 0 && !searchTerm && (!hasFittedRef.current || dataChanged)) {
                     mapInst.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
                     hasFittedRef.current = true;
                 }
-            }, [data, mapping, legends, opacity, iconScale, visibility, defaultIcon, defaultSectorColor, defaultBeamwidth, defaultRadius]);
+            }, [data, mapping, legends, opacity, iconScale, visibility, defaultIcon, defaultSectorColor, defaultBeamwidth, defaultRadius, colorMode, colorRanges, iconMode, iconRanges]);
 
             useEffect(() => {
                 if (!mapInst.current || !data.length || !searchTerm) return;
@@ -1171,17 +1221,32 @@
 
             const [mapping, setMapping] = useState({ SiteName: '', SectorName: '', Longitude: '', Latitude: '', Azimuth: '', BeamCategory: '', RadiusCategory: '', ColorCode: '', IconCategory: '', sitePopupCols: [], sectorPopupCols: [] });
 
-            // Adjust Default Values State
             const [defaultBeamwidth, setDefaultBeamwidth] = useState(35);
             const [defaultRadius, setDefaultRadius] = useState(120);
             const [defaultIcon, setDefaultIcon] = useState({ url: 'paddle/grn-blank.png', color: "#ffffff", scale: 1.0 });
             const [defaultSectorColor, setDefaultSectorColor] = useState("#0ea5e9");
 
             const [legends, setLegends] = useState({ beam: {}, radius: {}, color: {}, icons: {} });
+            const [colorMode, setColorMode] = useState('category'); 
+            const [colorRanges, setColorRanges] = useState([
+                { opMin: '>=', min: '', opMax: '<=', max: '', color: '#22c55e' },
+                { opMin: '>=', min: '', opMax: '<=', max: '', color: '#eab308' },
+                { opMin: '>=', min: '', opMax: '<=', max: '', color: '#ef4444' }
+            ]);
+
+            const [iconMode, setIconMode] = useState('category'); 
+            const [iconRanges, setIconRanges] = useState([
+                { opMin: '>=', min: '', opMax: '<=', max: '', iconConfig: { url: 'paddle/grn-blank.png', color: "#ffffff", scale: 1.0 } },
+                { opMin: '>=', min: '', opMax: '<=', max: '', iconConfig: { url: 'paddle/ylw-blank.png', color: "#ffffff", scale: 1.0 } },
+                { opMin: '>=', min: '', opMax: '<=', max: '', iconConfig: { url: 'paddle/red-blank.png', color: "#ffffff", scale: 1.0 } }
+            ]);
+
             const [opacity, setOpacity] = useState(50);
             const [globalIconScale, setGlobalIconScale] = useState(1.0);
             const [mapLayer, setMapLayer] = useState('light');
-            const [activeIconModal, setActiveIconModal] = useState(null);
+            
+            const [activeIconModal, setActiveIconModal] = useState(null); // String for default/category
+            const [activeRangeIconModal, setActiveRangeIconModal] = useState(null); // Index for range mode
 
             const [searchTerm, setSearchTerm] = useState('');
             const [activeTab, setActiveTab] = useState('upload');
@@ -1282,6 +1347,28 @@
 
             const updateLegend = (type, category, value) => { setLegends(prev => ({ ...prev, [type]: { ...prev[type], [category]: value } })); };
 
+            const isColumnNumeric = useCallback((col) => {
+                if (!col || !data.length) return false;
+                let numCount = 0, total = 0;
+                data.forEach(row => {
+                    const val = row[col];
+                    if (val !== undefined && val !== null && String(val).trim() !== '') {
+                        total++;
+                        if (!isNaN(parseFloat(val)) && isFinite(val)) numCount++;
+                    }
+                });
+                return total > 0 && (numCount / total) >= 0.8;
+            }, [data]);
+
+            // Auto-switch mode based on column type
+            useEffect(() => {
+                if (mapping.ColorCode && !isColumnNumeric(mapping.ColorCode)) setColorMode('category');
+            }, [mapping.ColorCode, isColumnNumeric]);
+
+            useEffect(() => {
+                if (mapping.IconCategory && !isColumnNumeric(mapping.IconCategory)) setIconMode('category');
+            }, [mapping.IconCategory, isColumnNumeric]);
+
             useEffect(() => {
                 if (!mapping.BeamCategory) return;
                 const unique = getUniqueValues(mapping.BeamCategory);
@@ -1339,7 +1426,22 @@
                     if (!sitesProcessed[site]) {
                         sitesProcessed[site] = true;
                         let iconCfg = { ...defaultIcon };
-                        if (mapping.IconCategory && legends.icons[row[mapping.IconCategory]]) iconCfg = legends.icons[row[mapping.IconCategory]];
+                        
+                        if (mapping.IconCategory) {
+                            if (iconMode === 'range') {
+                                const numVal = parseFloat(row[mapping.IconCategory]);
+                                if (!isNaN(numVal)) {
+                                    for (const range of iconRanges) {
+                                        if (evaluateRangeMatch(numVal, range)) {
+                                            iconCfg = range.iconConfig;
+                                            break;
+                                        }
+                                    }
+                                }
+                            } else if (legends.icons[row[mapping.IconCategory]]) {
+                                iconCfg = legends.icons[row[mapping.IconCategory]];
+                            }
+                        }
 
                         let sDesc = ``;
                         mapping.sitePopupCols.filter(f => f !== mapping.SiteName).forEach(f => {
@@ -1364,7 +1466,22 @@
                     let bw = defaultBeamwidth, rad = defaultRadius, color = defaultSectorColor;
                     if (mapping.BeamCategory && legends.beam[row[mapping.BeamCategory]]) bw = parseFloat(legends.beam[row[mapping.BeamCategory]]);
                     if (mapping.RadiusCategory && legends.radius[row[mapping.RadiusCategory]]) rad = parseFloat(legends.radius[row[mapping.RadiusCategory]]);
-                    if (mapping.ColorCode && legends.color[row[mapping.ColorCode]]) color = legends.color[row[mapping.ColorCode]];
+                    
+                    if (mapping.ColorCode) {
+                        if (colorMode === 'range') {
+                            const numVal = parseFloat(row[mapping.ColorCode]);
+                            if (!isNaN(numVal)) {
+                                for (const range of colorRanges) {
+                                    if (evaluateRangeMatch(numVal, range)) {
+                                        color = range.color;
+                                        break;
+                                    }
+                                }
+                            }
+                        } else if (legends.color[row[mapping.ColorCode]]) {
+                            color = legends.color[row[mapping.ColorCode]];
+                        }
+                    }
 
                     const kmlColor = hexToKml(color, opacity);
                     let desc = ``;
@@ -1408,7 +1525,7 @@
                                     <div className="panel">
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
                                             <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsUploadOpen(prev => !prev)}>
-                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>FILE UPLOAD</span>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>1. FILE UPLOAD</span>
                                                 <div style={{ transform: isUploadOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
                                             </div>
                                             <div style={{ display: isUploadOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
@@ -1429,7 +1546,7 @@
                                         {/* LOCATION MAPPING */}
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
                                             <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsColumnsOpen(prev => !prev)}>
-                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>LOCATION MAPPING</span>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>2. LOCATION MAPPING</span>
                                                 <div style={{ transform: isColumnsOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
                                             </div>
                                             <div style={{ display: isColumnsOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
@@ -1454,7 +1571,7 @@
                                         {/* POPUP SETTINGS */}
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
                                             <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsPopupOpen(prev => !prev)}>
-                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>POPUP SETTINGS</span>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>3. POPUP SETTINGS</span>
                                                 <div style={{ transform: isPopupOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
                                             </div>
                                             <div style={{ display: isPopupOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
@@ -1495,7 +1612,7 @@
                                         {/* VISUAL ATTRIBUTES */}
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
                                             <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsVisualOpen(prev => !prev)}>
-                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>VISUAL ATTRIBUTES</span>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>4. VISUAL ATTRIBUTES</span>
                                                 <div style={{ transform: isVisualOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
                                             </div>
                                             <div style={{ display: isVisualOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
@@ -1508,14 +1625,105 @@
                                                             <option value="">-- Apply Default Color to All --</option>
                                                             {headers.map(h => <option key={h} value={h}>{h}</option>)}
                                                         </select>
-                                                        <input type="color" value={defaultSectorColor} onChange={e => setDefaultSectorColor(e.target.value)} style={{ width: '32px', height: '32px', padding: 0, border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer' }} title="Default Sector Color" />
-                                                    </div>
-                                                    {mapping.ColorCode && Object.keys(legends.color).map(cat => (
-                                                        <div className="legend-input-row" key={cat} style={{ marginTop: '6px' }}>
-                                                            <span style={{ fontSize: '10px', color: '#64748b' }}>{cat}</span>
-                                                            <input type="color" style={{ width: '32px', height: '24px', cursor: 'pointer' }} value={legends.color[cat] || '#000000'} onChange={e => updateLegend('color', cat, e.target.value)} />
+                                                        <div style={{ width: '32px', height: '32px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0' }}>
+                                                            <input type="color" value={defaultSectorColor} onChange={e => setDefaultSectorColor(e.target.value)} style={{ width: '150%', height: '150%', margin: '-25%', cursor: 'pointer', border: 'none', padding: 0 }} title="Default Sector Color" />
                                                         </div>
-                                                    ))}
+                                                    </div>
+
+                                                    {/* Mode Toggle */}
+                                                    {mapping.ColorCode && isColumnNumeric(mapping.ColorCode) && (
+                                                        <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', marginTop: '10px', marginBottom: '8px', gap: '2px', borderRadius: '4px' }}>
+                                                            {['category', 'range'].map(m => (
+                                                                <button key={m} onClick={() => setColorMode(m)} style={{
+                                                                    flex: 1, height: '28px', border: 'none', borderRadius: '3px',
+                                                                    fontSize: '11px', fontWeight: 600, textTransform: 'capitalize',
+                                                                    background: colorMode === m ? '#fff' : 'transparent',
+                                                                    color: colorMode === m ? '#1e293b' : '#64748b',
+                                                                    boxShadow: colorMode === m ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                                                                    cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit'
+                                                                }}>{m === 'category' ? 'By Category' : 'By Range'}</button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Category Mode */}
+                                                    {mapping.ColorCode && colorMode === 'category' && (() => {
+                                                        const cats = Object.keys(legends.color);
+                                                        return cats.length > 0 && (
+                                                            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                                {cats.map(cat => (
+                                                                    <div key={cat} style={{ 
+                                                                        height: '40px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0 12px', 
+                                                                        background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' 
+                                                                    }}>
+                                                                        <span style={{ flex: 1, fontSize: '11px', fontWeight: 500, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '8px' }}>
+                                                                            {cat}
+                                                                        </span>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            <div style={{ width: '24px', height: '24px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                                                                <input type="color" value={legends.color[cat] || '#000000'} onChange={e => updateLegend('color', cat, e.target.value)} style={{ width: '150%', height: '150%', margin: '-25%', cursor: 'pointer', border: 'none', padding: 0 }} />
+                                                                            </div>
+                                                                            <div style={{ color: '#64748b', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                                                                <Icons.Chevron />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* Range Mode */}
+                                                    {mapping.ColorCode && colorMode === 'range' && (
+                                                        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                            {colorRanges.map((range, idx) => (
+                                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f1f5f9', padding: '0 6px', height: '32px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                                                                        <select value={range.opMin || '>='} onChange={e => {
+                                                                            const u = [...colorRanges]; u[idx] = { ...u[idx], opMin: e.target.value }; setColorRanges(u);
+                                                                        }} style={{ fontSize: '12px', fontWeight: 600, color: '#475569', background: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' }}>
+                                                                            <option value=">=">&ge;</option><option value=">">&gt;</option><option value="=">=</option>
+                                                                            <option value="!=">&ne;</option><option value="<=">&le;</option><option value="<">&lt;</option>
+                                                                        </select>
+                                                                        <input type="number" value={range.min} onChange={e => {
+                                                                            const u = [...colorRanges]; u[idx] = { ...u[idx], min: e.target.value }; setColorRanges(u);
+                                                                        }} style={{ width: '45px', border: 'none', background: 'transparent', outline: 'none', fontSize: '12px', fontWeight: 600, color: '#0f172a', fontFamily: 'inherit', textAlign: 'left', padding: 0 }} placeholder="Val 1" />
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f1f5f9', padding: '0 6px', height: '32px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                                                                        <select value={range.opMax || '<='} onChange={e => {
+                                                                            const u = [...colorRanges]; u[idx] = { ...u[idx], opMax: e.target.value }; setColorRanges(u);
+                                                                        }} style={{ fontSize: '12px', fontWeight: 600, color: '#475569', background: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' }}>
+                                                                            <option value="<=">&le;</option><option value="<">&lt;</option><option value="=">=</option>
+                                                                            <option value="!=">&ne;</option><option value=">=">&ge;</option><option value=">">&gt;</option>
+                                                                        </select>
+                                                                        <input type="number" value={range.max} onChange={e => {
+                                                                            const u = [...colorRanges]; u[idx] = { ...u[idx], max: e.target.value }; setColorRanges(u);
+                                                                        }} style={{ width: '45px', border: 'none', background: 'transparent', outline: 'none', fontSize: '12px', fontWeight: 600, color: '#0f172a', fontFamily: 'inherit', textAlign: 'left', padding: 0 }} placeholder="Val 2" />
+                                                                    </div>
+                                                                    <div style={{ width: '32px', height: '32px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, border: '1px solid #cbd5e1' }}>
+                                                                        <input type="color" value={range.color} onChange={e => {
+                                                                            const u = [...colorRanges]; u[idx] = { ...u[idx], color: e.target.value }; setColorRanges(u);
+                                                                        }} style={{ width: '150%', height: '150%', margin: '-25%', cursor: 'pointer', border: 'none', padding: 0, background: 'none' }} title="Assign Color" />
+                                                                    </div>
+                                                                    <button onClick={() => { if (colorRanges.length > 1) setColorRanges(colorRanges.filter((_, i) => i !== idx)); }}
+                                                                        style={{
+                                                                            width: '32px', height: '32px', border: 'none', borderRadius: '4px', background: '#f8fafc', flexShrink: 0, padding: 0,
+                                                                            cursor: colorRanges.length > 1 ? 'pointer' : 'default', color: colorRanges.length > 1 ? '#ef4444' : '#cbd5e1', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', transition: 'all 0.15s'
+                                                                        }}
+                                                                    >&times;</button>
+                                                                </div>
+                                                            ))}
+                                                            <button onClick={() => {
+                                                                const c = ['#22c55e', '#3b82f6', '#eab308', '#ef4444', '#8b5cf6', '#f97316', '#06b6d4', '#ec4899'];
+                                                                setColorRanges([...colorRanges, { opMin: '>=', min: '', opMax: '<=', max: '', color: c[colorRanges.length % c.length] }]);
+                                                            }} style={{
+                                                                width: '100%', height: '32px', border: 'none', borderRadius: '4px', background: '#f1f5f9', fontSize: '12px', fontWeight: 600, color: '#64748b', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s'
+                                                            }}
+                                                                onMouseOver={e => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+                                                                onMouseOut={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
+                                                            >+ Add Range</button>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Beamwidth Slicer Logic */}
@@ -1579,7 +1787,7 @@
                                         {/* ICON SETTINGS */}
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
                                             <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsIconOpen(prev => !prev)}>
-                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>ICON SETTINGS</span>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>5. ICON SETTINGS</span>
                                                 <div style={{ transform: isIconOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
                                             </div>
                                             <div style={{ display: isIconOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
@@ -1596,19 +1804,92 @@
                                                             <img src={getIconUrl(defaultIcon.url) || defaultIcon.url} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
                                                         </div>
                                                     </div>
-                                                    {mapping.IconCategory && (
-                                                        <div style={{ marginTop: '8px' }}>
+
+                                                    {/* Mode Toggle for Icons */}
+                                                    {mapping.IconCategory && isColumnNumeric(mapping.IconCategory) && (
+                                                        <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', marginTop: '10px', marginBottom: '8px', gap: '2px', borderRadius: '4px' }}>
+                                                            {['category', 'range'].map(m => (
+                                                                <button key={m} onClick={() => setIconMode(m)} style={{
+                                                                    flex: 1, height: '28px', border: 'none', borderRadius: '3px',
+                                                                    fontSize: '11px', fontWeight: 600, textTransform: 'capitalize',
+                                                                    background: iconMode === m ? '#fff' : 'transparent',
+                                                                    color: iconMode === m ? '#1e293b' : '#64748b',
+                                                                    boxShadow: iconMode === m ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                                                                    cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit'
+                                                                }}>{m === 'category' ? 'By Category' : 'By Range'}</button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Icon Category Mode */}
+                                                    {mapping.IconCategory && iconMode === 'category' && (
+                                                        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                             {Object.keys(legends.icons).map(cat => (
-                                                                <div key={cat} className="legend-input-row" style={{ cursor: 'pointer', height: '40px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0 12px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={() => setActiveIconModal(cat)}>
-                                                                    <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '11px', fontWeight: 500, paddingRight: '8px' }}>{cat}</span>
+                                                                <div key={cat} style={{ cursor: 'pointer', height: '40px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0 12px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={() => setActiveIconModal(cat)}>
+                                                                    <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '11px', fontWeight: 500, color: '#334155', paddingRight: '8px' }}>{cat}</span>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                         <div style={{ width: '24px', height: '24px', overflow: 'hidden', flexShrink: 0, background: '#fff', borderRadius: '4px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                                             <img src={getIconUrl(legends.icons[cat]?.url) || getIconUrl(defaultIcon.url) || defaultIcon.url} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
                                                                         </div>
-                                                                        <Icons.Chevron />
+                                                                        <div style={{ color: '#64748b', display: 'flex', alignItems: 'center' }}>
+                                                                            <Icons.Chevron />
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Icon Range Mode */}
+                                                    {mapping.IconCategory && iconMode === 'range' && (
+                                                        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                            {iconRanges.map((range, idx) => (
+                                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f1f5f9', padding: '0 6px', height: '32px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                                                                        <select value={range.opMin || '>='} onChange={e => {
+                                                                            const u = [...iconRanges]; u[idx] = { ...u[idx], opMin: e.target.value }; setIconRanges(u);
+                                                                        }} style={{ fontSize: '12px', fontWeight: 600, color: '#475569', background: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' }}>
+                                                                            <option value=">=">&ge;</option><option value=">">&gt;</option><option value="=">=</option>
+                                                                            <option value="!=">&ne;</option><option value="<=">&le;</option><option value="<">&lt;</option>
+                                                                        </select>
+                                                                        <input type="number" value={range.min} onChange={e => {
+                                                                            const u = [...iconRanges]; u[idx] = { ...u[idx], min: e.target.value }; setIconRanges(u);
+                                                                        }} style={{ width: '45px', border: 'none', background: 'transparent', outline: 'none', fontSize: '12px', fontWeight: 600, color: '#0f172a', fontFamily: 'inherit', textAlign: 'left', padding: 0 }} placeholder="Val 1" />
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f1f5f9', padding: '0 6px', height: '32px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                                                                        <select value={range.opMax || '<='} onChange={e => {
+                                                                            const u = [...iconRanges]; u[idx] = { ...u[idx], opMax: e.target.value }; setIconRanges(u);
+                                                                        }} style={{ fontSize: '12px', fontWeight: 600, color: '#475569', background: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' }}>
+                                                                            <option value="<=">&le;</option><option value="<">&lt;</option><option value="=">=</option>
+                                                                            <option value="!=">&ne;</option><option value=">=">&ge;</option><option value=">">&gt;</option>
+                                                                        </select>
+                                                                        <input type="number" value={range.max} onChange={e => {
+                                                                            const u = [...iconRanges]; u[idx] = { ...u[idx], max: e.target.value }; setIconRanges(u);
+                                                                        }} style={{ width: '45px', border: 'none', background: 'transparent', outline: 'none', fontSize: '12px', fontWeight: 600, color: '#0f172a', fontFamily: 'inherit', textAlign: 'left', padding: 0 }} placeholder="Val 2" />
+                                                                    </div>
+                                                                    
+                                                                    {/* Assign Icon Button */}
+                                                                    <div onClick={() => setActiveRangeIconModal(idx)} style={{ width: '32px', height: '32px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, border: '1px solid #cbd5e1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }} title="Assign Icon">
+                                                                        <img src={getIconUrl(range.iconConfig?.url) || defaultIcon.url} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                                                                    </div>
+                                                                    
+                                                                    <button onClick={() => { if (iconRanges.length > 1) setIconRanges(iconRanges.filter((_, i) => i !== idx)); }}
+                                                                        style={{
+                                                                            width: '32px', height: '32px', border: 'none', borderRadius: '4px', background: '#f8fafc', flexShrink: 0, padding: 0,
+                                                                            cursor: iconRanges.length > 1 ? 'pointer' : 'default', color: iconRanges.length > 1 ? '#ef4444' : '#cbd5e1', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', transition: 'all 0.15s'
+                                                                        }}
+                                                                    >&times;</button>
+                                                                </div>
+                                                            ))}
+                                                            <button onClick={() => {
+                                                                const fallbackIcons = ['paddle/grn-blank.png', 'paddle/blu-blank.png', 'paddle/red-blank.png', 'paddle/ylw-blank.png', 'paddle/pink-blank.png'];
+                                                                setIconRanges([...iconRanges, { opMin: '>=', min: '', opMax: '<=', max: '', iconConfig: { url: fallbackIcons[iconRanges.length % fallbackIcons.length], color: "#ffffff", scale: 1.0 } }]);
+                                                            }} style={{
+                                                                width: '100%', height: '32px', border: 'none', borderRadius: '4px', background: '#f1f5f9', fontSize: '12px', fontWeight: 600, color: '#64748b', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s'
+                                                            }}
+                                                                onMouseOver={e => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+                                                                onMouseOut={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
+                                                            >+ Add Range</button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1626,7 +1907,7 @@
                                         {/* VISIBILITY */}
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
                                             <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsVisibilityOpen(prev => !prev)}>
-                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>VISIBILITY</span>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>6. VISIBILITY</span>
                                                 <div style={{ transform: isVisibilityOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
                                             </div>
                                             <div style={{ display: isVisibilityOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
@@ -1651,7 +1932,7 @@
                                         {/* SEARCH & FILTER */}
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
                                             <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsSearchOpen(prev => !prev)}>
-                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>SEARCH & FILTER</span>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>7. SEARCH & FILTER</span>
                                                 <div style={{ transform: isSearchOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
                                             </div>
                                             <div style={{ display: isSearchOpen ? 'block' : 'none', padding: '0 16px 16px 16px' }}>
@@ -1687,7 +1968,7 @@
                                         {/* ACTIONS & EXPORT */}
                                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
                                             <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setIsActionsOpen(prev => !prev)}>
-                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>ACTIONS & EXPORT</span>
+                                                <span style={{ fontWeight: 700, fontSize: '11px', color: '#334155' }}>8. ACTIONS & EXPORT</span>
                                                 <div style={{ transform: isActionsOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}><Icons.Chevron /></div>
                                             </div>
                                             <div style={{ display: isActionsOpen ? 'flex' : 'none', padding: '0 16px 16px 16px', flexDirection: 'column', gap: '8px' }}>
@@ -1715,14 +1996,37 @@
 
                         <div className="main-content">
                             <div id="map-container" style={{ position: 'relative', flex: 1, height: '100%' }}>
-                                <MapView data={hasDrawn ? filteredData : []} searchTerm={searchTerm} mapping={mapping} legends={legends} opacity={opacity} iconScale={globalIconScale} mapLayer={mapLayer} defaultBeamwidth={defaultBeamwidth} defaultRadius={defaultRadius} defaultIcon={defaultIcon} defaultSectorColor={defaultSectorColor} visibility={visibility} />
+                                <MapView data={hasDrawn ? filteredData : []} searchTerm={searchTerm} mapping={mapping} legends={legends} opacity={opacity} iconScale={globalIconScale} mapLayer={mapLayer} defaultBeamwidth={defaultBeamwidth} defaultRadius={defaultRadius} defaultIcon={defaultIcon} defaultSectorColor={defaultSectorColor} visibility={visibility} colorMode={colorMode} colorRanges={colorRanges} iconMode={iconMode} iconRanges={iconRanges} />
                                 <div className="layer-switcher" style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1000 }}><LayerSwitcher current={mapLayer} onSelect={setMapLayer} /></div>
                             </div>
                         </div>
                     </div>
 
+                    {/* Modal for Category Mode */}
                     {activeIconModal && (
-                        <IconPickerModal category={activeIconModal} config={activeIconModal === '__DEFAULT__' ? defaultIcon : legends.icons[activeIconModal]} onSave={config => { if (activeIconModal === '__DEFAULT__') { setDefaultIcon(config); } else { updateLegend('icons', activeIconModal, config); } }} onClose={() => setActiveIconModal(null)} />
+                        <IconPickerModal 
+                            category={activeIconModal} 
+                            config={activeIconModal === '__DEFAULT__' ? defaultIcon : legends.icons[activeIconModal]} 
+                            onSave={config => { 
+                                if (activeIconModal === '__DEFAULT__') { setDefaultIcon(config); } 
+                                else { updateLegend('icons', activeIconModal, config); } 
+                            }} 
+                            onClose={() => setActiveIconModal(null)} 
+                        />
+                    )}
+
+                    {/* Modal for Range Mode */}
+                    {activeRangeIconModal !== null && (
+                        <IconPickerModal 
+                            category={`Range ${activeRangeIconModal + 1}`} 
+                            config={iconRanges[activeRangeIconModal].iconConfig} 
+                            onSave={config => { 
+                                const newRanges = [...iconRanges];
+                                newRanges[activeRangeIconModal].iconConfig = config;
+                                setIconRanges(newRanges);
+                            }} 
+                            onClose={() => setActiveRangeIconModal(null)} 
+                        />
                     )}
                 </div>
             );
