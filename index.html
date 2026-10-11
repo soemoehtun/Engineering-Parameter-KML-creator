@@ -790,110 +790,6 @@
                 right: 16px;
             }
         }
-
-        .layer-switcher {
-            z-index: 1000;
-        }
-
-        .layer-switcher-collapsed {
-            width: 44px;
-            height: 44px;
-            border-radius: 4px;
-            background: #fff;
-            border: 2px solid white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-            cursor: pointer;
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-
-        .layer-switcher-collapsed:hover {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        }
-
-        .layer-switcher-collapsed img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .layer-switcher-expanded {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.2);
-            padding: 8px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            width: auto;
-            animation: layerFadeIn 0.15s ease;
-        }
-
-        @keyframes layerFadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .layer-tile {
-            width: 68px;
-            cursor: pointer;
-            text-align: center;
-            border-radius: 6px;
-            padding: 4px;
-            transition: background 0.15s;
-        }
-
-        .layer-tile:hover {
-            background: #f1f5f9;
-        }
-
-        .layer-tile.active {
-            background: #eff6ff;
-        }
-
-        .layer-tile-img {
-            width: 60px;
-            height: 60px;
-            border-radius: 4px;
-            border: 2px solid transparent;
-            overflow: hidden;
-            margin: 0 auto;
-            transition: border-color 0.15s;
-        }
-
-        .layer-tile.active .layer-tile-img {
-            border-color: var(--accent);
-        }
-
-        .layer-tile-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .layer-tile-label {
-            font-size: 10px;
-            font-weight: 600;
-            color: #475569;
-            margin-top: 4px;
-            line-height: 1.2;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .layer-tile.active .layer-tile-label {
-            color: var(--accent);
-        }
     </style>
 </head>
 
@@ -1016,34 +912,6 @@
             return minPass && maxPass;
         };
 
-        const LayerSwitcher = ({ current, onSelect }) => {
-            const [isExpanded, setIsExpanded] = useState(false);
-            const layers = [
-                { id: 'light', label: 'Light', img: 'https://basemaps.cartocdn.com/light_all/5/15/12.png' },
-                { id: 'dark', label: 'Dark', img: 'https://basemaps.cartocdn.com/dark_all/5/15/12.png' },
-                { id: 'satellite', label: 'Satellite', img: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/5/12/15' },
-                { id: 'osm', label: 'OSM', img: 'https://a.tile.openstreetmap.org/5/15/12.png' }
-            ];
-            const currentLayer = layers.find(l => l.id === current) || layers[0];
-            if (!isExpanded) {
-                return (
-                    <div className="layer-switcher-collapsed" onClick={() => setIsExpanded(true)}>
-                        <img src={currentLayer.img} alt="Toggle Layer" />
-                    </div>
-                );
-            }
-            return (
-                <div className="layer-switcher-expanded" onMouseLeave={() => setIsExpanded(false)}>
-                    {layers.map(layer => (
-                        <div key={layer.id} className={`layer-tile ${current === layer.id ? 'active' : ''}`} onClick={() => { onSelect(layer.id); setIsExpanded(false); }}>
-                            <div className="layer-tile-img"><img src={layer.img} alt={layer.label} /></div>
-                            <div className="layer-tile-label">{layer.label}</div>
-                        </div>
-                    ))}
-                </div>
-            );
-        };
-
         const calculateSectorPolygon = (lat, lon, az, bw, rad) => {
             const coords = [];
             const halfBw = bw / 2;
@@ -1062,7 +930,7 @@
             return coords;
         };
 
-        const MapView = ({ data, mapping, legends, opacity, iconScale, mapLayer, defaultBeamwidth, defaultRadius, defaultIcon, defaultSectorColor, visibility, searchTerm, colorMode, colorRanges, iconMode, iconRanges }) => {
+        const MapView = ({ data, mapping, legends, opacity, iconScale, defaultBeamwidth, defaultRadius, defaultIcon, defaultSectorColor, visibility, searchTerm, colorMode, colorRanges, iconMode, iconRanges }) => {
             const mapRef = useRef(null);
             const mapInst = useRef(null);
             const clusterGroupRef = useRef(null);
@@ -1071,13 +939,6 @@
             const prevDataLenRef = useRef(0);
             const baseLayerRef = useRef(null);
             const boundsRef = useRef([]);
-
-            const MAP_LAYERS = {
-                light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                osm: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png'
-            };
 
             const centerOnData = () => {
                 if (mapInst.current && boundsRef.current.length > 0) {
@@ -1088,7 +949,7 @@
             useEffect(() => {
                 if (!mapInst.current && mapRef.current) {
                     mapInst.current = L.map(mapRef.current, { zoomControl: false, preferCanvas: true, attributionControl: false }).setView([20, 0], 2);
-                    baseLayerRef.current = L.tileLayer(MAP_LAYERS[mapLayer], { maxZoom: 19, attribution: '' }).addTo(mapInst.current);
+                    baseLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '' }).addTo(mapInst.current);
                     beamsGroupRef.current = L.layerGroup().addTo(mapInst.current);
                     clusterGroupRef.current = L.markerClusterGroup({ chunkedLoading: true, spiderfyOnMaxZoom: true, showCoverageOnHover: false, zoomToBoundsOnClick: true, maxClusterRadius: 60 }).addTo(mapInst.current);
                 }
@@ -1110,10 +971,6 @@
                 observer.observe(container);
                 return () => { observer.disconnect(); clearTimeout(resizeTimeout); };
             }, []);
-
-            useEffect(() => {
-                if (baseLayerRef.current) baseLayerRef.current.setUrl(MAP_LAYERS[mapLayer]);
-            }, [mapLayer]);
 
             useEffect(() => {
                 if (!mapInst.current) return;
@@ -1475,7 +1332,6 @@
 
             const [opacity, setOpacity] = useState(50);
             const [globalIconScale, setGlobalIconScale] = useState(1.0);
-            const [mapLayer, setMapLayer] = useState('light');
             
             const [pickerOpen, setPickerOpen] = useState(false);
             const [pickerTarget, setPickerTarget] = useState(null); // { type: 'default'|'category'|'range', key: string|number }
@@ -2237,8 +2093,7 @@
 
                         <div className="main-content">
                             <div id="map-container" style={{ position: 'relative', flex: 1, height: '100%' }}>
-                                <MapView data={hasDrawn ? filteredData : []} searchTerm={searchTerm} mapping={mapping} legends={legends} opacity={opacity} iconScale={globalIconScale} mapLayer={mapLayer} defaultBeamwidth={defaultBeamwidth} defaultRadius={defaultRadius} defaultIcon={defaultIcon} defaultSectorColor={defaultSectorColor} visibility={visibility} colorMode={colorMode} colorRanges={colorRanges} iconMode={iconMode} iconRanges={iconRanges} />
-                                <div className="layer-switcher" style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1000 }}><LayerSwitcher current={mapLayer} onSelect={setMapLayer} /></div>
+                                <MapView data={hasDrawn ? filteredData : []} searchTerm={searchTerm} mapping={mapping} legends={legends} opacity={opacity} iconScale={globalIconScale} defaultBeamwidth={defaultBeamwidth} defaultRadius={defaultRadius} defaultIcon={defaultIcon} defaultSectorColor={defaultSectorColor} visibility={visibility} colorMode={colorMode} colorRanges={colorRanges} iconMode={iconMode} iconRanges={iconRanges} />
                             </div>
                         </div>
                     </div>
